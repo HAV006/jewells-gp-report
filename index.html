@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Jewells GP Report (PoC)</title>
+  <style>
+    :root{
+      --pbi-bg: rgba(250, 242, 227, 0.95); /* #FAF2E3 */
+      --text: #424242;
+      --muted: #6b6b6b;
+      --line: #d7d2c7;
+      --header: #f3ebdb;
+      --white: #ffffff;
+      --chip: rgba(255,255,255,0.7);
+      --focus: rgba(66,66,66,0.25);
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family:"Segoe UI", wf_segoe-ui_normal, helvetica, arial, sans-serif;
+      color:var(--text);
+      background: var(--pbi-bg);
+    }
+    .wrap{
+      padding: 9px 5px 5px; /* igual que tu dump */
+      min-height: 100vh;
+    }
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 10px 8px;
+      background: transparent;
+    }
+    .title{
+      font-weight:600;
+      font-size:16px;
+      letter-spacing:.2px;
+    }
+    .sub{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding: 0 10px 10px;
+    }
+    .card{
+      flex: 1 1 220px;
+      min-width: 220px;
+      background: var(--chip);
+      padding: 10px 10px;
+      border: 1px solid var(--line);
+    }
+    .kpi-label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+    .kpi-value{
+      font-size:20px;
+      font-weight:600;
+      line-height:1.2;
+    }
+    .kpi-hint{
+      margin-top:6px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .panel{
+      margin: 0 10px 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.55);
+      padding: 10px;
+    }
+    .filters{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:end;
+      margin-bottom:10px;
+    }
+    label{
+      font-size:12px;
+      color:var(--muted);
+      display:block;
+      margin-bottom:4px;
+    }
+    select, input{
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      outline: none;
+      min-width: 180px;
+    }
+    select:focus, input:focus{
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+    .btn{
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      cursor:pointer;
+      font-size: 13px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:12px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+    }
+    thead th{
+      position: sticky;
+      top: 0;
+      background: var(--header);
+      text-align:left;
+      font-weight:600;
+      border-bottom: 1px solid var(--line);
+      padding: 8px 8px;
+      z-index:1;
+      white-space:nowrap;
+    }
+    tbody td{
+      border-top: 1px solid rgba(215,210,199,0.65);
+      padding: 7px 8px;
+      white-space:nowrap;
+    }
+    tbody tr:hover{
+      background: rgba(250,242,227,0.55);
+    }
+    .num{ text-align:right; font-variant-numeric: tabular-nums; }
+    .muted{ color: var(--muted); }
+
+    .pager{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-end;
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">Jewells GP Report (PoC)</div>
+        <div class="sub" id="meta">Loading…</div>
+      </div>
+      <button class="btn" id="refreshBtn">Refresh</button>
+    </header>
+
+    <div class="row" id="kpis"></div>
+
+    <div class="panel">
+      <div class="filters">
+        <div>
+          <label>Store</label>
+          <select id="storeSel"></select>
+        </div>
+        <div>
+          <label>ISO Week</label>
+          <select id="weekSel"></select>
+        </div>
+        <div>
+          <label>SKU (contains)</label>
+          <input id="skuSearch" placeholder="e.g. 6000…" />
+        </div>
+        <div>
+          <button class="btn" id="clearBtn">Clear</button>
+        </div>
+      </div>
+
+      <div style="overflow:auto; max-height: 62vh;">
+        <table>
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th>SKU</th>
+              <th>ISOYear</th>
+              <th>ISOWeek</th>
+              <th class="num">Units</th>
+              <th class="num">Net Sales</th>
+              <th class="num">COGS</th>
+              <th class="num">Gross Profit</th>
+              <th class="num">Gross Margin %</th>
+              <th class="num">Wtd Unit Cost</th>
+              <th class="muted">Merge</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button class="btn" id="prevBtn">Prev</button>
+        <span id="pageInfo">—</span>
+        <button class="btn" id="nextBtn">Next</button>
+      </div>
+    </div>
+
+    <div class="sub" style="padding:0 10px 10px;">
+      Fuente: Futura (COGS) + NewStore (Net Sales). Refresco: cada 8h (task scheduler).
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
