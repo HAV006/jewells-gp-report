@@ -26,13 +26,28 @@
       padding: 9px 5px 5px;
       min-height: 100vh;
     }
-    header{
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
+    header.topbar{
+      display:grid;
+      grid-template-columns: auto 1fr auto;
+      align-items:center;
       gap:12px;
       padding:10px 10px 8px;
       background: transparent;
+    }
+    .brand img{
+      height: 28px;
+      width: auto;
+      display:block;
+    }
+    .meta-slot{
+      text-align:right;
+      min-width: 0;
+    }
+    /* permite que el meta se “apoye” más hacia la zona de KPIs (COGS) */
+    .meta-slot .sub{
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .title{
       font-weight:600;
@@ -265,14 +280,37 @@ left: 0;
       flex: 0 0 auto;
     }
 
+  
+    /* ✅ UI refine v3: alinea el texto del store junto al checkbox y mejora el sangrado */
+    .ms-panel{
+      left: -12px;                 /* un poco más a la izquierda */
+      width: max(280px, calc(100% + 24px));
+      padding: 6px;
+    }
+    .ms-list{
+      margin-left: 0;
+      padding-left: 2px;
+    }
+    .ms-item{
+      gap: 6px;                    /* menos separación checkbox/texto */
+      padding: 3px 4px;
+      justify-content: flex-start; /* asegura alineación a la izquierda */
+      line-height: 1.2;
+    }
+    .ms-item span{
+      flex: 0 0 auto;              /* evita que el texto se vaya a la derecha */
+    }
+
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <header>
-      <div>
-        <div class="title">Jewells GP Report (PoC)</div>
+    <header class="topbar">
+      <div class="brand" aria-label="Jewells">
+        <img src="./jewells-logo.png" alt="Jewells" />
+      </div>
+      <div class="meta-slot">
         <div class="sub" id="meta">Loading…</div>
       </div>
       <button class="btn" id="refreshBtn">Refresh</button>
