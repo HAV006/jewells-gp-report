@@ -23,7 +23,7 @@
       background: var(--pbi-bg);
     }
     .wrap{
-      padding: 9px 5px 5px; /* igual que tu dump */
+      padding: 9px 5px 5px;
       min-height: 100vh;
     }
     header{
@@ -72,6 +72,30 @@
       font-size:11px;
       color:var(--muted);
     }
+    .kpi-weekly{
+      margin-top:8px;
+      padding-top:8px;
+      border-top: 1px solid rgba(215,210,199,0.75);
+      max-height: 120px;
+      overflow:auto;
+    }
+    .kpi-weekly.empty{ padding-top:0; border-top:none; }
+    .kpi-week-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:11px;
+      color:var(--muted);
+      padding:2px 0;
+      white-space:nowrap;
+    }
+    .kpi-week-row .num{
+      font-variant-numeric: tabular-nums;
+      text-align:right;
+      color: var(--text);
+      font-weight:600;
+    }
 
     .panel{
       margin: 0 10px 10px;
@@ -92,7 +116,7 @@
       display:block;
       margin-bottom:4px;
     }
-    select, input{
+    input{
       font-family: inherit;
       font-size: 13px;
       padding: 8px 8px;
@@ -101,7 +125,7 @@
       outline: none;
       min-width: 180px;
     }
-    select:focus, input:focus{
+    input:focus{
       box-shadow: 0 0 0 3px var(--focus);
     }
     .btn{
@@ -111,6 +135,77 @@
       cursor:pointer;
       font-size: 13px;
     }
+
+    /* MultiSelect */
+    .ms{ position: relative; min-width: 180px; }
+    .ms-btn{
+      width: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      padding: 8px 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      cursor:pointer;
+      font-size: 13px;
+      text-align:left;
+    }
+    .ms-btn:focus{ box-shadow: 0 0 0 3px var(--focus); outline:none; }
+    .ms-title{ display:none; } /* reservado por si lo quieres */
+    .ms-value{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ms-caret{ color: var(--muted); }
+    .ms-panel{
+      position:absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: rgba(255,255,255,0.98);
+      border: 1px solid var(--line);
+      padding: 8px;
+      display:none;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+    .ms.open .ms-panel{ display:block; }
+    .ms-search{
+      width:100%;
+      min-width: 0;
+      padding: 7px 8px;
+      margin-bottom: 6px;
+    }
+    .ms-actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-bottom: 6px;
+    }
+    .ms-link{
+      border:none;
+      background: transparent;
+      color: var(--muted);
+      cursor:pointer;
+      padding: 0;
+      font-size: 12px;
+      text-decoration: underline;
+    }
+    .ms-list{
+      max-height: 220px;
+      overflow:auto;
+      border-top: 1px solid rgba(215,210,199,0.55);
+      padding-top: 6px;
+    }
+    .ms-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding: 4px 2px;
+      font-size: 12px;
+      color: var(--text);
+      cursor:pointer;
+      user-select:none;
+    }
+    .ms-item input{ margin:0; }
 
     table{
       width:100%;
@@ -169,11 +264,11 @@
       <div class="filters">
         <div>
           <label>Store</label>
-          <select id="storeSel"></select>
+          <div id="storeMs" class="ms"></div>
         </div>
         <div>
           <label>ISO Week</label>
-          <select id="weekSel"></select>
+          <div id="weekMs" class="ms"></div>
         </div>
         <div>
           <label>SKU (contains)</label>

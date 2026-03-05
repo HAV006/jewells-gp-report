@@ -50,17 +50,192 @@ function normalizeData(payload){
   }));
 }
 
+// -------------------- MultiSelect (checkbox dropdown) --------------------
+const state = {
+  stores: new Set(), // empty = All
+  weeks: new Set(),  // empty = All
+};
+let __openMs = null;
+
+function selectionSummary(set, allLabel="All"){
+  if (!set || set.size === 0) return allLabel;
+  if (set.size === 1) return [...set][0];
+  return `${set.size} selected`;
+}
+
+function sortWeekKeys(keys){
+  // keys like 2026-W06
+  return [...keys].sort((a,b)=>{
+    const [ay,aw] = a.split("-W").map(Number);
+    const [by,bw] = b.split("-W").map(Number);
+    if (ay !== by) return by - ay;
+    return bw - aw;
+  });
+}
+
+function buildMultiSelect({ mountId, title, options, getSet, onChange }){
+  const mount = el(mountId);
+  mount.innerHTML = `
+    <button class="ms-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
+      <span class="ms-title">${title}</span>
+      <span class="ms-value" data-ms-value>All</span>
+      <span class="ms-caret">▾</span>
+    </button>
+    <div class="ms-panel" role="listbox" aria-multiselectable="true">
+      <input class="ms-search" type="text" placeholder="Search…" />
+      <div class="ms-actions">
+        <button class="ms-link" type="button" data-act="all">Select all</button>
+        <button class="ms-link" type="button" data-act="none">Clear</button>
+      </div>
+      <div class="ms-list" data-ms-list></div>
+    </div>
+  `;
+
+  const btn = mount.querySelector(".ms-btn");
+  const panel = mount.querySelector(".ms-panel");
+  const list = mount.querySelector("[data-ms-list]");
+  const valEl = mount.querySelector("[data-ms-value]");
+  const search = mount.querySelector(".ms-search");
+
+  const render = () => {
+    const set = getSet();
+    valEl.textContent = selectionSummary(set, "All");
+    btn.setAttribute("aria-expanded", mount.classList.contains("open") ? "true" : "false");
+
+    const q = (search.value || "").trim().toLowerCase();
+    const filteredOpts = q
+      ? options.filter(o => (o.label||"").toLowerCase().includes(q) || (o.value||"").toLowerCase().includes(q))
+      : options;
+
+    list.innerHTML = filteredOpts.map(o => {
+      const checked = set.has(o.value) ? "checked" : "";
+      const safe = String(o.value).replace(/"/g, "&quot;");
+      return `
+        <label class="ms-item">
+          <input type="checkbox" value="${safe}" ${checked} />
+          <span>${o.label}</span>
+        </label>
+      `;
+    }).join("");
+  };
+
+  const open = () => {
+    if (__openMs && __openMs !== mount) __openMs.classList.remove("open");
+    __openMs = mount;
+    mount.classList.add("open");
+    render();
+    search.focus();
+    search.select();
+  };
+
+  const close = () => {
+    mount.classList.remove("open");
+    btn.setAttribute("aria-expanded", "false");
+    if (__openMs === mount) __openMs = null;
+  };
+
+  btn.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (mount.classList.contains("open")) close();
+    else open();
+  });
+
+  // Actions: select all = empty set (All), clear = empty set too, but user might expect different;
+  // We'll implement: "Select all" => empty set (All); "Clear" => empty set (All) as well.
+  mount.querySelector(".ms-actions").addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t || !t.dataset || !t.dataset.act) return;
+    const act = t.dataset.act;
+    const set = getSet();
+    set.clear(); // both actions revert to All (empty selection)
+    render();
+    onChange();
+    e.preventDefault();
+  });
+
+  // Checkbox toggles
+  list.addEventListener("change", (e) => {
+    const inp = e.target;
+    if (!inp || inp.tagName !== "INPUT") return;
+    const v = String(inp.value);
+    const set = getSet();
+    if (inp.checked) set.add(v);
+    else set.delete(v);
+    render();
+    onChange();
+  });
+
+  // Search
+  search.addEventListener("input", () => render());
+
+  // Close on outside click
+  document.addEventListener("click", (e) => {
+    if (!mount.classList.contains("open")) return;
+    if (mount.contains(e.target)) return;
+    close();
+  });
+
+  // Close on Esc
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && mount.classList.contains("open")) close();
+  });
+
+  // initial render
+  render();
+
+  return { render, close, open };
+}
+
+// -------------------- KPIs with weekly breakdown --------------------
+function aggregateByWeek(list){
+  const map = new Map();
+  for (const r of list){
+    const k = weekKey(r);
+    if (!map.has(k)) map.set(k, { net:0, cogs:0, units:0 });
+    const a = map.get(k);
+    a.net += (r.NetSales || 0);
+    a.cogs += (r.COGS || 0);
+    a.units += (r.Units || 0);
+  }
+  return map;
+}
+
+function weeklyLinesHtml(weeklyMap, metric){
+  const keys = sortWeekKeys([...weeklyMap.keys()]);
+  if (keys.length === 0) return `<div class="kpi-weekly empty">—</div>`;
+
+  const rowsHtml = keys.map(k => {
+    const a = weeklyMap.get(k);
+    const net = a.net;
+    const cogs = a.cogs;
+    const gp = net - cogs;
+    const gm = net !== 0 ? gp / net : null;
+
+    let v = "—";
+    if (metric === "net") v = fmtGBP(net);
+    if (metric === "cogs") v = fmtGBP(cogs);
+    if (metric === "gp") v = fmtGBP(gp);
+    if (metric === "gm") v = gm === null ? "—" : fmtPct(gm);
+
+    return `<div class="kpi-week-row"><span>${k}</span><span class="num">${v}</span></div>`;
+  }).join("");
+
+  return `<div class="kpi-weekly">${rowsHtml}</div>`;
+}
+
 function renderKpis(list){
   const net = list.reduce((a,r)=>a + (r.NetSales||0),0);
   const cogs = list.reduce((a,r)=>a + (r.COGS||0),0);
   const gp = net - cogs;
   const gm = net !== 0 ? gp / net : null;
 
+  const weekly = aggregateByWeek(list);
+
   const kpis = [
-    { label:"Net Sales (£)", value: fmtGBP(net), hint:"Gross Sales – Discounts – Returns (Ex VAT)" },
-    { label:"COGS (£)", value: fmtGBP(cogs), hint:"Σ (Units Sold × Cost per Unit at time of sale)" },
-    { label:"Gross Profit (£)", value: fmtGBP(gp), hint:"Net Sales – COGS" },
-    { label:"Gross Margin (%)", value: gm === null ? "—" : fmtPct(gm), hint:"Gross Profit ÷ Net Sales" },
+    { label:"Net Sales (£)", value: fmtGBP(net), hint:"Gross Sales – Discounts – Returns (Ex VAT)", metric:"net" },
+    { label:"COGS (£)", value: fmtGBP(cogs), hint:"Σ (Units Sold × Cost per Unit at time of sale)", metric:"cogs" },
+    { label:"Gross Profit (£)", value: fmtGBP(gp), hint:"Net Sales – COGS", metric:"gp" },
+    { label:"Gross Margin (%)", value: gm === null ? "—" : fmtPct(gm), hint:"Gross Profit ÷ Net Sales", metric:"gm" },
   ];
 
   el("kpis").innerHTML = kpis.map(k => `
@@ -68,6 +243,7 @@ function renderKpis(list){
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.value}</div>
       <div class="kpi-hint">${k.hint}</div>
+      ${weeklyLinesHtml(weekly, k.metric)}
     </div>
   `).join("");
 }
@@ -99,13 +275,11 @@ function renderTable(){
 }
 
 function applyFilters(){
-  const store = el("storeSel").value;
-  const week = el("weekSel").value;
   const sku = el("skuSearch").value.trim().toLowerCase();
 
   filtered = rows.filter(r => {
-    if (store !== "__ALL__" && r.Store !== store) return false;
-    if (week !== "__ALL__" && weekKey(r) !== week) return false;
+    if (state.stores.size > 0 && !state.stores.has(r.Store)) return false;
+    if (state.weeks.size > 0 && !state.weeks.has(weekKey(r))) return false;
     if (sku && !r.SKU.toLowerCase().includes(sku)) return false;
     return true;
   });
@@ -123,17 +297,31 @@ function applyFilters(){
   renderTable();
 }
 
+let msStore = null;
+let msWeek = null;
+
 function fillFilters(){
   const stores = uniq(rows.map(r => r.Store));
   const weeks = uniq(rows.map(weekKey));
+  const weeksSorted = sortWeekKeys(weeks);
 
-  el("storeSel").innerHTML =
-    `<option value="__ALL__">All</option>` +
-    stores.map(s => `<option value="${s}">${s}</option>`).join("");
+  // store
+  msStore = buildMultiSelect({
+    mountId: "storeMs",
+    title: "",
+    options: stores.map(s => ({ value: s, label: s })),
+    getSet: () => state.stores,
+    onChange: applyFilters,
+  });
 
-  el("weekSel").innerHTML =
-    `<option value="__ALL__">All</option>` +
-    weeks.map(w => `<option value="${w}">${w}</option>`).join("");
+  // week
+  msWeek = buildMultiSelect({
+    mountId: "weekMs",
+    title: "",
+    options: weeksSorted.map(w => ({ value: w, label: w })),
+    getSet: () => state.weeks,
+    onChange: applyFilters,
+  });
 }
 
 async function load(){
@@ -155,17 +343,18 @@ async function load(){
 }
 
 function wire(){
-  el("storeSel").addEventListener("change", applyFilters);
-  el("weekSel").addEventListener("change", applyFilters);
   el("skuSearch").addEventListener("input", () => {
     window.clearTimeout(window.__t);
     window.__t = window.setTimeout(applyFilters, 150);
   });
 
   el("clearBtn").addEventListener("click", () => {
-    el("storeSel").value = "__ALL__";
-    el("weekSel").value = "__ALL__";
+    state.stores.clear();
+    state.weeks.clear();
     el("skuSearch").value = "";
+    // re-render multiselect summaries
+    if (msStore) msStore.render();
+    if (msWeek) msWeek.render();
     applyFilters();
   });
 
