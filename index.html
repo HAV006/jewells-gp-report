@@ -137,7 +137,7 @@
     }
 
     /* MultiSelect */
-    .ms{ position: relative; min-width: 220px; }
+    .ms{ position: relative; min-width: 180px; }
     .ms-btn{
       width: 100%;
       display:flex;
@@ -158,17 +158,17 @@
     .ms-panel{
       position:absolute;
       top: calc(100% + 4px);
-      /* ✅ “sangrado” a la izquierda para que el desplegable quede alineado con el control */
-      left: -6px;
+            left: -6px;
       right: auto;
+      width: max(260px, calc(100% + 12px));
+left: 0;
+      right: 0;
       z-index: 20;
       background: rgba(255,255,255,0.98);
       border: 1px solid var(--line);
       padding: 6px;
       display:none;
       box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-      /* ✅ más ancho para ver bien los códigos */
-      width: max(260px, calc(100% + 12px));
     }
     .ms.open .ms-panel{ display:block; }
     .ms-search{
@@ -180,8 +180,7 @@
     .ms-actions{
       display:flex;
       gap:10px;
-      justify-content:space-between;
-      align-items:center;
+      justify-content:flex-end;
       margin-bottom: 6px;
     }
     .ms-link{
@@ -198,9 +197,8 @@
       overflow:auto;
       border-top: 1px solid rgba(215,210,199,0.55);
       padding-top: 6px;
-      /* ✅ reduce margen/padding para que checkbox+texto queden pegados a la izquierda */
       padding-left: 0;
-      margin-left: -2px;
+      margin-left: -2px; /* ✅ sangrado a la izquierda */
     }
     .ms-item{
       display:flex;
@@ -211,19 +209,8 @@
       color: var(--text);
       cursor:pointer;
       user-select:none;
-      white-space:nowrap;
     }
-    .ms-item span{
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .ms-item input{
-      margin:0;
-      width: 14px;
-      height: 14px;
-      flex: 0 0 auto;
-    }
+    .ms-item input{ margin:0; }
 
     table{
       width:100%;
@@ -263,6 +250,21 @@
       font-size:12px;
       color:var(--muted);
     }
+  
+    /* ✅ FIX: evita que el estilo global de input afecte a los checkboxes (min-width/padding) */
+    .ms-item input[type="checkbox"]{
+      min-width: 14px;
+      width: 14px;
+      height: 14px;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      background: transparent;
+      -webkit-appearance: checkbox;
+      appearance: auto;
+      flex: 0 0 auto;
+    }
+
   </style>
 </head>
 
