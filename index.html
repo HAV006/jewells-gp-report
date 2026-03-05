@@ -22,32 +22,49 @@
       color:var(--text);
       background: var(--pbi-bg);
     }
-    .wrap{
-      padding: 9px 5px 5px;
-      min-height: 100vh;
-    }
+    
+    /* ✅ Top bar: logo a la izquierda, título+meta centrados (sobre COGS), refresh a la derecha */
     header.topbar{
       display:grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: 1fr auto 1fr; /* centro real */
       align-items:center;
       gap:12px;
       padding:10px 10px 8px;
       background: transparent;
     }
+    .brand{ justify-self:start; }
     .brand img{
       height: 28px;
       width: auto;
       display:block;
+      opacity: 0.92;
     }
-    .meta-slot{
-      text-align:right;
-      min-width: 0;
+    .headline{ justify-self:center; text-align:center; }
+    .headline-line{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      align-items:baseline;
+      gap:10px;
+      row-gap:2px;
     }
-    /* permite que el meta se “apoye” más hacia la zona de KPIs (COGS) */
-    .meta-slot .sub{
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .headline-line .title{
+      font-weight:600;
+      font-size:15px;
+      letter-spacing:.2px;
+      color: var(--text);
+      white-space:nowrap;
+    }
+    .headline-line .sub{
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .topbar-actions{ justify-self:end; }
+
+    .wrap{
+      padding: 9px 5px 5px;
+      min-height: 100vh;
     }
     .title{
       font-weight:600;
@@ -310,10 +327,17 @@ left: 0;
       <div class="brand" aria-label="Jewells">
         <img src="./jewells-logo.png" alt="Jewells" />
       </div>
-      <div class="meta-slot">
-        <div class="sub" id="meta">Loading…</div>
+
+      <div class="headline">
+        <div class="headline-line">
+          <span class="title">Jewells GP Report (PoC)</span>
+          <span class="sub" id="meta">Loading…</span>
+        </div>
       </div>
-      <button class="btn" id="refreshBtn">Refresh</button>
+
+      <div class="topbar-actions">
+        <button class="btn" id="refreshBtn">Refresh</button>
+      </div>
     </header>
 
     <div class="row" id="kpis"></div>
