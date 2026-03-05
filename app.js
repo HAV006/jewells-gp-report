@@ -50,6 +50,68 @@ function normalizeData(payload){
   }));
 }
 
+
+// -------------------- Export (CSV / Excel) --------------------
+function nowStamp(){
+  const d = new Date();
+  const pad = (n)=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+
+function downloadBlob(filename, blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+}
+
+function csvEscape(v){
+  if (v === null || v === undefined) return "";
+  const s = String(v);
+  const needs = /[",\n\r]/.test(s);
+  const out = s.replace(/"/g,'""');
+  return needs ? `"${out}"` : out;
+}
+
+function getExportRows(){
+  // Exporta TODO lo que está en la tabla (filtrado + orden actual), no solo la página visible
+  return (filtered || []).map(r => ({
+    Store: r.Store,
+    SKU: r.SKU,
+    ISOYear: r.ISOYear,
+    ISOWeek: r.ISOWeek,
+    Units: Number(r.Units || 0),
+    NetSales: Number(r.NetSales || 0),
+    COGS: Number(r.COGS || 0),
+    GrossProfit: Number(r.GrossProfit || 0),
+    GrossMarginPct: (r.GrossMarginPct === null || r.GrossMarginPct === undefined) ? "" : Number(r.GrossMarginPct),
+    WeightedUnitCost: Number(r.WeightedUnitCost || 0),
+    Merge: r._merge || "",
+  }));
+}
+
+function exportCsv(){
+  const data = getExportRows();
+  if (!data.length){
+    alert("No rows to export (check your filters).");
+    return;
+  }
+  const headers = Object.keys(data[0]);
+  const lines = [];
+  // Excel-friendly: UTF-8 BOM + separator hint
+  lines.push("sep=,");
+  lines.push(headers.join(","));
+  for (const row of data){
+    lines.push(headers.map(h => csvEscape(row[h])).join(","));
+  }
+  const csv = "\ufeff" + lines.join("\n");
+  downloadBlob(`gp_report_${nowStamp()}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
+}
+
 // -------------------- MultiSelect (checkbox dropdown) --------------------
 const state = {
   stores: new Set(), // empty = All
@@ -357,6 +419,36 @@ function wire(){
     if (msWeek) msWeek.render();
     applyFilters();
   });
+
+
+  // Export dropdown
+  const exportWrap = document.querySelector(".export");
+  const exportBtn = el("exportBtn");
+  const exportMenu = el("exportMenu");
+  const exportCsvItem = el("exportCsv");
+
+  if (exportBtn && exportWrap && exportMenu){
+    const closeExport = () => exportWrap.classList.remove("open");
+    exportBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      exportWrap.classList.toggle("open");
+    });
+    exportCsvItem && exportCsvItem.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeExport();
+      exportCsv();
+    });
+    document.addEventListener("click", (e) => {
+      if (!exportWrap.classList.contains("open")) return;
+      if (exportWrap.contains(e.target)) return;
+      closeExport();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeExport();
+    });
+  }
+
+
 
   el("prevBtn").addEventListener("click", () => { page--; renderTable(); });
   el("nextBtn").addEventListener("click", () => { page++; renderTable(); });
