@@ -295,7 +295,7 @@ function renderKpis(list){
 
   const kpis = [
     { label:"Net Sales (£)", value: fmtGBP(net), hint:"Gross Sales – Discounts – Returns (Ex VAT)", metric:"net" },
-    { label:"COGS (£)", value: fmtGBP(cogs), hint:"Σ (Units Sold × Cost per Unit at time of sale)", metric:"cogs" },
+    { label:"COGS (£)", value: fmtGBP(cogs), hint:"Σ (Units Sold × Cost per Unit at time of sale (Ex VAT))", metric:"cogs" },
     { label:"Gross Profit (£)", value: fmtGBP(gp), hint:"Net Sales – COGS", metric:"gp" },
     { label:"Gross Margin (%)", value: gm === null ? "—" : fmtPct(gm), hint:"Gross Profit ÷ Net Sales", metric:"gm" },
   ];
