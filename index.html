@@ -389,6 +389,10 @@
       vertical-align: middle;
     }
 
+    #reportTable thead th.num{
+      text-align: right;
+    }
+
     #reportTable tbody td{
       border-top: 1px solid rgba(215,210,199,0.65);
       padding: 7px 8px;
@@ -400,64 +404,60 @@
       background: rgba(250,242,227,0.55);
     }
 
+    /* Anchos proporcionales por columna */
     #reportTable thead th:nth-child(1),
     #reportTable tbody td:nth-child(1){
-      width: 90px; /* Store */
+      width: 90px;   /* Store */
     }
 
     #reportTable thead th:nth-child(2),
     #reportTable tbody td:nth-child(2){
-      width: 110px; /* SKU */
+      width: 110px;  /* SKU */
     }
 
     #reportTable thead th:nth-child(3),
     #reportTable tbody td:nth-child(3){
-      width: 84px; /* Image */
+      width: 84px;   /* Image */
     }
 
     #reportTable thead th:nth-child(4),
     #reportTable tbody td:nth-child(4){
-      width: 80px; /* ISOYear */
+      width: 80px;   /* ISOYear */
     }
 
     #reportTable thead th:nth-child(5),
     #reportTable tbody td:nth-child(5){
-      width: 80px; /* ISOWeek */
+      width: 80px;   /* ISOWeek */
     }
 
     #reportTable thead th:nth-child(6),
     #reportTable tbody td:nth-child(6){
-      width: 80px; /* Units */
+      width: 90px;   /* Units */
     }
 
     #reportTable thead th:nth-child(7),
     #reportTable tbody td:nth-child(7){
-      width: 110px; /* Net Sales */
+      width: 110px;  /* Net Sales */
     }
 
     #reportTable thead th:nth-child(8),
     #reportTable tbody td:nth-child(8){
-      width: 100px; /* COGS */
+      width: 100px;  /* COGS */
     }
 
     #reportTable thead th:nth-child(9),
     #reportTable tbody td:nth-child(9){
-      width: 120px; /* Gross Profit */
+      width: 120px;  /* Gross Profit */
     }
 
     #reportTable thead th:nth-child(10),
     #reportTable tbody td:nth-child(10){
-      width: 120px; /* Gross Margin % */
+      width: 120px;  /* Gross Margin % */
     }
 
     #reportTable thead th:nth-child(11),
     #reportTable tbody td:nth-child(11){
-      width: 110px; /* Wtd Unit Cost */
-    }
-
-    #reportTable thead th:nth-child(12),
-    #reportTable tbody td:nth-child(12){
-      width: 80px; /* Merge */
+      width: 110px;  /* Wtd Unit Cost */
     }
 
     .thumb-head{
@@ -493,12 +493,8 @@
     }
 
     .num{
-      text-align:right;
+      text-align: right;
       font-variant-numeric: tabular-nums;
-    }
-
-    .muted{
-      color: var(--muted);
     }
 
     .sku-link{
@@ -584,7 +580,6 @@
               <th class="num">Gross Profit</th>
               <th class="num">Gross Margin %</th>
               <th class="num">Wtd Unit Cost</th>
-              <th class="muted">Merge</th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>

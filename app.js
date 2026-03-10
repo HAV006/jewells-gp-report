@@ -372,18 +372,32 @@ function wireProductThumbs(scope = document){
     if (img.dataset.wired === "1") return;
     img.dataset.wired = "1";
 
+    const link = img.closest("a");
+
+    if (link) {
+      link.href = img.currentSrc || img.src;
+    }
+
+    img.addEventListener("load", () => {
+      if (link) {
+        link.href = img.currentSrc || img.src;
+      }
+    });
+
     img.addEventListener("error", () => {
       const currentStage = img.dataset.stage || "1";
 
       if (currentStage === "1") {
         img.dataset.stage = "2";
         img.src = img.dataset.src2;
+        if (link) link.href = img.dataset.src2;
         return;
       }
 
       img.dataset.stage = "fallback";
       img.onerror = null;
       img.src = img.dataset.fallback;
+      if (link) link.href = img.dataset.fallback;
     });
   });
 }
@@ -402,7 +416,13 @@ function renderTable(){
         </a>
       </td>
       <td class="thumb-cell">
-        <a href="${r.CatalogUrl}" target="_blank" rel="noopener noreferrer" title="Open product in NewStore catalog">
+        <a
+          class="product-image-link"
+          href="${r.ProductImageUrl1}"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open product image"
+        >
           <img
             class="prod-thumb"
             data-product-thumb="1"
@@ -423,7 +443,6 @@ function renderTable(){
       <td class="num">${fmtGBP(r.GrossProfit)}</td>
       <td class="num">${fmtPct(r.GrossMarginPct)}</td>
       <td class="num">${Number(r.WeightedUnitCost || 0).toFixed(2)}</td>
-      <td class="muted">${escapeHtml(r._merge)}</td>
     </tr>
   `).join("");
 
