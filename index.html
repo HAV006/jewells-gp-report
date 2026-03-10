@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Jewells GP Report (PoC)</title>
+  <style>
+    :root{
+      --pbi-bg: rgba(250, 242, 227, 0.95); /*  #FAF2E3  */
+      --text: #424242;
+      --muted: #6b6b6b;
+      --line: #d7d2c7;
+      --header: #f3ebdb;
+      --white: #ffffff;
+      --chip: rgba(255,255,255,0.7);
+      --focus: rgba(66,66,66,0.25);
+    }
+
+    *{ box-sizing: border-box; }
+
+    body{
+      margin:0;
+      font-family:"Segoe UI", wf_segoe-ui_normal, helvetica, arial, sans-serif;
+      color:var(--text);
+      background: var(--pbi-bg);
+    }
+
+    header.topbar{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items:center;
+      gap:12px;
+      padding:10px 10px 8px;
+      background: transparent;
+    }
+
+    .brand{ justify-self:start; }
+
+    .brand img{
+      height: 28px;
+      width: auto;
+      display:block;
+      opacity: 0.92;
+    }
+
+    .headline{
+      justify-self:center;
+      text-align:center;
+    }
+
+    .headline-line{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:center;
+      align-items:baseline;
+      gap:10px;
+      row-gap:2px;
+    }
+
+    .headline-line .title{
+      font-weight:600;
+      font-size:15px;
+      letter-spacing:.2px;
+      color: var(--text);
+      white-space:nowrap;
+    }
+
+    .headline-line .sub{
+      font-size:12px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+
+    .topbar-actions{ justify-self:end; }
+
+    .wrap{
+      padding: 9px 5px 5px;
+      min-height: 100vh;
+    }
+
+    .title{
+      font-weight:600;
+      font-size:16px;
+      letter-spacing:.2px;
+    }
+
+    .sub{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      padding: 0 10px 10px;
+    }
+
+    .card{
+      flex: 1 1 220px;
+      min-width: 220px;
+      background: var(--chip);
+      padding: 10px 10px;
+      border: 1px solid var(--line);
+    }
+
+    .kpi-label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .kpi-value{
+      font-size:20px;
+      font-weight:600;
+      line-height:1.2;
+    }
+
+    .kpi-hint{
+      margin-top:6px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .kpi-weekly{
+      margin-top:8px;
+      padding-top:8px;
+      border-top: 1px solid rgba(215,210,199,0.75);
+      max-height: 120px;
+      overflow:auto;
+    }
+
+    .kpi-weekly.empty{
+      padding-top:0;
+      border-top:none;
+    }
+
+    .kpi-week-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:11px;
+      color:var(--muted);
+      padding:2px 0;
+      white-space:nowrap;
+    }
+
+    .kpi-week-row .num{
+      font-variant-numeric: tabular-nums;
+      text-align:right;
+      color: var(--text);
+      font-weight:600;
+    }
+
+    .panel{
+      margin: 0 10px 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.55);
+      padding: 10px;
+    }
+
+    .filters{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:end;
+      margin-bottom:10px;
+    }
+
+    label{
+      font-size:12px;
+      color:var(--muted);
+      display:block;
+      margin-bottom:4px;
+    }
+
+    input{
+      font-family: inherit;
+      font-size: 13px;
+      padding: 8px 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      outline: none;
+      min-width: 180px;
+    }
+
+    input:focus{
+      box-shadow: 0 0 0 3px var(--focus);
+    }
+
+    .btn{
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      cursor:pointer;
+      font-size: 13px;
+    }
+
+    .btn.export{
+      white-space: nowrap;
+    }
+
+    .ms{
+      position: relative;
+      min-width: 180px;
+    }
+
+    .ms-btn{
+      width: 100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      padding: 8px 8px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.9);
+      cursor:pointer;
+      font-size: 13px;
+      text-align:left;
+    }
+
+    .ms-btn:focus{
+      box-shadow: 0 0 0 3px var(--focus);
+      outline:none;
+    }
+
+    .ms-title{
+      display:none;
+    }
+
+    .ms-value{
+      flex:1;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .ms-caret{
+      color: var(--muted);
+    }
+
+    .ms-panel{
+      position:absolute;
+      top: calc(100% + 4px);
+      left: -12px;
+      right: 0;
+      width: max(280px, calc(100% + 24px));
+      z-index: 20;
+      background: rgba(255,255,255,0.98);
+      border: 1px solid var(--line);
+      padding: 6px;
+      display:none;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    }
+
+    .ms.open .ms-panel{
+      display:block;
+    }
+
+    .ms-search{
+      width:100%;
+      min-width: 0;
+      padding: 7px 8px;
+      margin-bottom: 6px;
+    }
+
+    .ms-actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-bottom: 6px;
+    }
+
+    .ms-link{
+      border:none;
+      background: transparent;
+      color: var(--muted);
+      cursor:pointer;
+      padding: 0;
+      font-size: 12px;
+      text-decoration: underline;
+    }
+
+    .ms-list{
+      max-height: 240px;
+      overflow:auto;
+      border-top: 1px solid rgba(215,210,199,0.55);
+      padding-top: 6px;
+      padding-left: 2px;
+      margin-left: 0;
+    }
+
+    .ms-item{
+      display:flex;
+      align-items:center;
+      gap: 6px;
+      padding: 3px 4px;
+      font-size: 12px;
+      color: var(--text);
+      cursor:pointer;
+      user-select:none;
+      justify-content: flex-start;
+      line-height: 1.2;
+    }
+
+    .ms-item span{
+      flex: 0 0 auto;
+    }
+
+    .ms-item input{
+      margin:0;
+    }
+
+    .ms-item input[type="checkbox"]{
+      min-width: 14px;
+      width: 14px;
+      height: 14px;
+      padding: 0;
+      margin: 0;
+      border: 0;
+      background: transparent;
+      -webkit-appearance: checkbox;
+      appearance: auto;
+      flex: 0 0 auto;
+    }
+
+    .filters-spacer{
+      flex: 1 1 auto;
+    }
+
+    .export{
+      position: relative;
+      margin-left: auto;
+    }
+
+    .export-menu{
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 140px;
+      background: rgba(255,255,255,0.98);
+      border: 1px solid var(--line);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+      display: none;
+      z-index: 50;
+      padding: 6px;
+    }
+
+    .export.open .export-menu{
+      display:block;
+    }
+
+    .export-item{
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      padding: 8px 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .export-item:hover{
+      background: rgba(250,242,227,0.55);
+    }
+
+    #reportTable{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid var(--line);
+      table-layout: fixed;
+    }
+
+    #reportTable thead th{
+      position: sticky;
+      top: 0;
+      background: var(--header);
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--line);
+      padding: 8px 8px;
+      z-index: 1;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    #reportTable tbody td{
+      border-top: 1px solid rgba(215,210,199,0.65);
+      padding: 7px 8px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    #reportTable tbody tr:hover{
+      background: rgba(250,242,227,0.55);
+    }
+
+    #reportTable thead th:nth-child(1),
+    #reportTable tbody td:nth-child(1){
+      width: 90px; /* Store */
+    }
+
+    #reportTable thead th:nth-child(2),
+    #reportTable tbody td:nth-child(2){
+      width: 110px; /* SKU */
+    }
+
+    #reportTable thead th:nth-child(3),
+    #reportTable tbody td:nth-child(3){
+      width: 84px; /* Image */
+    }
+
+    #reportTable thead th:nth-child(4),
+    #reportTable tbody td:nth-child(4){
+      width: 80px; /* ISOYear */
+    }
+
+    #reportTable thead th:nth-child(5),
+    #reportTable tbody td:nth-child(5){
+      width: 80px; /* ISOWeek */
+    }
+
+    #reportTable thead th:nth-child(6),
+    #reportTable tbody td:nth-child(6){
+      width: 80px; /* Units */
+    }
+
+    #reportTable thead th:nth-child(7),
+    #reportTable tbody td:nth-child(7){
+      width: 110px; /* Net Sales */
+    }
+
+    #reportTable thead th:nth-child(8),
+    #reportTable tbody td:nth-child(8){
+      width: 100px; /* COGS */
+    }
+
+    #reportTable thead th:nth-child(9),
+    #reportTable tbody td:nth-child(9){
+      width: 120px; /* Gross Profit */
+    }
+
+    #reportTable thead th:nth-child(10),
+    #reportTable tbody td:nth-child(10){
+      width: 120px; /* Gross Margin % */
+    }
+
+    #reportTable thead th:nth-child(11),
+    #reportTable tbody td:nth-child(11){
+      width: 110px; /* Wtd Unit Cost */
+    }
+
+    #reportTable thead th:nth-child(12),
+    #reportTable tbody td:nth-child(12){
+      width: 80px; /* Merge */
+    }
+
+    .thumb-head{
+      text-align: left;
+      padding-left: 4px !important;
+      padding-right: 2px !important;
+    }
+
+    .thumb-cell{
+      text-align: left;
+      vertical-align: middle;
+      padding-left: 2px !important;
+      padding-right: 2px !important;
+    }
+
+    .thumb-cell a{
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      text-decoration: none;
+    }
+
+    .prod-thumb{
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      display: block;
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .num{
+      text-align:right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .muted{
+      color: var(--muted);
+    }
+
+    .sku-link{
+      color: var(--text);
+      text-decoration: underline;
+    }
+
+    .sku-link:hover{
+      opacity: 0.75;
+    }
+
+    .pager{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:flex-end;
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand" aria-label="Jewells">
+        <img src="./jewells-logo.png" alt="Jewells" />
+      </div>
+
+      <div class="headline">
+        <div class="headline-line">
+          <span class="title">Jewells GP Report (PoC)</span>
+          <span class="sub" id="meta">Loading…</span>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn" id="refreshBtn">Refresh</button>
+      </div>
+    </header>
+
+    <div class="row" id="kpis"></div>
+
+    <div class="panel">
+      <div class="filters">
+        <div>
+          <label>Store</label>
+          <div id="storeMs" class="ms"></div>
+        </div>
+        <div>
+          <label>ISO Week</label>
+          <div id="weekMs" class="ms"></div>
+        </div>
+        <div>
+          <label>SKU (contains)</label>
+          <input id="skuSearch" placeholder="e.g. 6000…" />
+        </div>
+        <div>
+          <button class="btn" id="clearBtn">Clear</button>
+        </div>
+        <div class="filters-spacer"></div>
+        <div class="export">
+          <button class="btn export-btn" id="exportBtn" type="button">Export ▾</button>
+          <div class="export-menu" id="exportMenu" role="menu" aria-label="Export format">
+            <button class="export-item" id="exportCsv" type="button" role="menuitem">CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="overflow:auto; max-height: 62vh;">
+        <table id="reportTable">
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th>SKU</th>
+              <th class="thumb-head">Image</th>
+              <th>ISOYear</th>
+              <th>ISOWeek</th>
+              <th class="num">Units</th>
+              <th class="num">Net Sales</th>
+              <th class="num">COGS</th>
+              <th class="num">Gross Profit</th>
+              <th class="num">Gross Margin %</th>
+              <th class="num">Wtd Unit Cost</th>
+              <th class="muted">Merge</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="pager">
+        <button class="btn" id="prevBtn">Prev</button>
+        <span id="pageInfo">—</span>
+        <button class="btn" id="nextBtn">Next</button>
+      </div>
+    </div>
+
+    <div class="sub" style="padding:0 10px 10px;">
+      Fuente: Futura (COGS) + NewStore (Net Sales). Refresco: cada 8h (task scheduler).
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
