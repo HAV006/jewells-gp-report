@@ -1,6 +1,10 @@
 // ✅ Pon aquí tu endpoint público del Worker
 const GP_REPORT_URL = "https://mute-moon-e712.hectora-b43.workers.dev/gp-report";
 
+const ITEM_IMAGE_BASE_URL = "https://jewells-com.s3.amazonaws.com/ITEM%20JPG";
+const DEFAULT_PRODUCT_IMAGE_URL = "https://jewells-com.s3.amazonaws.com/Logo/logo-red.png";
+const NEWSTORE_CATALOG_BASE_URL = "https://manager.jewells.p.newstore.net/catalog/catalog-gb/locales/en-gb/products";
+
 let raw = null;
 let rows = [];
 let filtered = [];
@@ -12,49 +16,89 @@ const el = (id) => document.getElementById(id);
 
 function fmtGBP(x){
   const n = Number(x || 0);
-  return n.toLocaleString("en-GB", { style:"currency", currency:"GBP", minimumFractionDigits:2, maximumFractionDigits:2 });
+  return n.toLocaleString("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
+
 function fmtNum(x){
   const n = Number(x || 0);
-  return n.toLocaleString("en-GB", { minimumFractionDigits:0, maximumFractionDigits:0 });
+  return n.toLocaleString("en-GB", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 }
+
 function fmtPct(x){
   if (x === null || x === undefined || isNaN(Number(x))) return "—";
   return (Number(x) * 100).toFixed(2) + "%";
 }
 
 function uniq(arr){
-  return [...new Set(arr)].filter(v => v !== null && v !== undefined && v !== "").sort();
+  return [...new Set(arr)]
+    .filter(v => v !== null && v !== undefined && v !== "")
+    .sort();
 }
 
 function weekKey(r){
   const y = Number(r.ISOYear ?? r.isoyear ?? 0);
   const w = Number(r.ISOWeek ?? r.isoweek ?? 0);
-  return `${y}-W${String(w).padStart(2,"0")}`;
+  return `${y}-W${String(w).padStart(2, "0")}`;
+}
+
+function escapeHtml(v){
+  return String(v ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildProductImageUrl(sku, index){
+  const safeSku = encodeURIComponent(String(sku || "").trim());
+  return `${ITEM_IMAGE_BASE_URL}/${safeSku}_${index}.png`;
+}
+
+function buildCatalogUrl(sku){
+  const safeSku = encodeURIComponent(String(sku || "").trim());
+  return `${NEWSTORE_CATALOG_BASE_URL}/${safeSku}?lastCount=10&lastOffset=0&lastQuery=${safeSku}`;
 }
 
 function normalizeData(payload){
   const data = payload.data || [];
-  return data.map((r) => ({
-    Store: String(r.Store ?? r.store ?? ""),
-    SKU: String(r.SKU ?? r.sku ?? ""),
-    ISOYear: Number(r.ISOYear ?? r.isoyear ?? 0),
-    ISOWeek: Number(r.ISOWeek ?? r.isoweek ?? 0),
-    Units: Number(r.Units_NewStore ?? r.units_newstore ?? r.units ?? 0),
-    NetSales: Number(r.NetSales ?? r.netsales ?? 0),
-    COGS: Number(r.COGS ?? r.cogs ?? 0),
-    GrossProfit: Number(r.GrossProfit ?? r.grossprofit ?? 0),
-    GrossMarginPct: r.GrossMarginPct ?? r.grossmarginpct ?? null,
-    WeightedUnitCost: Number(r.WeightedUnitCost ?? r.weightedunitcost ?? 0),
-    _merge: String(r._merge ?? ""),
-  }));
+
+  return data.map((r) => {
+    const sku = String(r.SKU ?? r.sku ?? "").trim();
+
+    return {
+      Store: String(r.Store ?? r.store ?? ""),
+      SKU: sku,
+      ISOYear: Number(r.ISOYear ?? r.isoyear ?? 0),
+      ISOWeek: Number(r.ISOWeek ?? r.isoweek ?? 0),
+      Units: Number(r.Units_NewStore ?? r.units_newstore ?? r.Units ?? r.units ?? 0),
+      NetSales: Number(r.NetSales ?? r.netsales ?? 0),
+      COGS: Number(r.COGS ?? r.cogs ?? 0),
+      GrossProfit: Number(r.GrossProfit ?? r.grossprofit ?? 0),
+      GrossMarginPct: r.GrossMarginPct ?? r.grossmarginpct ?? null,
+      WeightedUnitCost: Number(r.WeightedUnitCost ?? r.weightedunitcost ?? 0),
+      _merge: String(r._merge ?? ""),
+
+      ProductImageUrl1: buildProductImageUrl(sku, 1),
+      ProductImageUrl2: buildProductImageUrl(sku, 2),
+      ProductImageFallback: DEFAULT_PRODUCT_IMAGE_URL,
+      CatalogUrl: buildCatalogUrl(sku),
+    };
+  });
 }
 
-
-// -------------------- Export (CSV / Excel) --------------------
+// -------------------- Export (CSV) --------------------
 function nowStamp(){
   const d = new Date();
-  const pad = (n)=>String(n).padStart(2,"0");
+  const pad = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
@@ -66,29 +110,31 @@ function downloadBlob(filename, blob){
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
 }
 
 function csvEscape(v){
   if (v === null || v === undefined) return "";
   const s = String(v);
   const needs = /[",\n\r]/.test(s);
-  const out = s.replace(/"/g,'""');
+  const out = s.replace(/"/g, '""');
   return needs ? `"${out}"` : out;
 }
 
 function getExportRows(){
-  // Exporta TODO lo que está en la tabla (filtrado + orden actual), no solo la página visible
   return (filtered || []).map(r => ({
     Store: r.Store,
     SKU: r.SKU,
+    CatalogUrl: r.CatalogUrl,
     ISOYear: r.ISOYear,
     ISOWeek: r.ISOWeek,
     Units: Number(r.Units || 0),
     NetSales: Number(r.NetSales || 0),
     COGS: Number(r.COGS || 0),
     GrossProfit: Number(r.GrossProfit || 0),
-    GrossMarginPct: (r.GrossMarginPct === null || r.GrossMarginPct === undefined) ? "" : Number(r.GrossMarginPct),
+    GrossMarginPct: (r.GrossMarginPct === null || r.GrossMarginPct === undefined)
+      ? ""
+      : Number(r.GrossMarginPct),
     WeightedUnitCost: Number(r.WeightedUnitCost || 0),
     Merge: r._merge || "",
   }));
@@ -100,36 +146,38 @@ function exportCsv(){
     alert("No rows to export (check your filters).");
     return;
   }
+
   const headers = Object.keys(data[0]);
   const lines = [];
-  // Excel-friendly: UTF-8 BOM + separator hint
   lines.push("sep=,");
   lines.push(headers.join(","));
+
   for (const row of data){
     lines.push(headers.map(h => csvEscape(row[h])).join(","));
   }
+
   const csv = "\ufeff" + lines.join("\n");
   downloadBlob(`gp_report_${nowStamp()}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
 }
 
 // -------------------- MultiSelect (checkbox dropdown) --------------------
 const state = {
-  stores: new Set(), // empty = All
-  weeks: new Set(),  // empty = All
+  stores: new Set(),
+  weeks: new Set(),
 };
+
 let __openMs = null;
 
-function selectionSummary(set, allLabel="All"){
+function selectionSummary(set, allLabel = "All"){
   if (!set || set.size === 0) return allLabel;
   if (set.size === 1) return [...set][0];
   return `${set.size} selected`;
 }
 
 function sortWeekKeys(keys){
-  // keys like 2026-W06
-  return [...keys].sort((a,b)=>{
-    const [ay,aw] = a.split("-W").map(Number);
-    const [by,bw] = b.split("-W").map(Number);
+  return [...keys].sort((a, b) => {
+    const [ay, aw] = a.split("-W").map(Number);
+    const [by, bw] = b.split("-W").map(Number);
     if (ay !== by) return by - ay;
     return bw - aw;
   });
@@ -137,6 +185,7 @@ function sortWeekKeys(keys){
 
 function buildMultiSelect({ mountId, title, options, getSet, onChange }){
   const mount = el(mountId);
+
   mount.innerHTML = `
     <button class="ms-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
       <span class="ms-title">${title}</span>
@@ -166,7 +215,10 @@ function buildMultiSelect({ mountId, title, options, getSet, onChange }){
 
     const q = (search.value || "").trim().toLowerCase();
     const filteredOpts = q
-      ? options.filter(o => (o.label||"").toLowerCase().includes(q) || (o.value||"").toLowerCase().includes(q))
+      ? options.filter(o =>
+          (o.label || "").toLowerCase().includes(q) ||
+          (o.value || "").toLowerCase().includes(q)
+        )
       : options;
 
     list.innerHTML = filteredOpts.map(o => {
@@ -202,47 +254,48 @@ function buildMultiSelect({ mountId, title, options, getSet, onChange }){
     else open();
   });
 
-  // Actions: select all = empty set (All), clear = empty set too, but user might expect different;
-  // We'll implement: "Select all" => empty set (All); "Clear" => empty set (All) as well.
   mount.querySelector(".ms-actions").addEventListener("click", (e) => {
     const t = e.target;
     if (!t || !t.dataset || !t.dataset.act) return;
-    const act = t.dataset.act;
+
     const set = getSet();
-    set.clear(); // both actions revert to All (empty selection)
+    set.clear();
+
+    if (t.dataset.act === "all") {
+      options.forEach(o => set.add(o.value));
+    }
+
     render();
     onChange();
     e.preventDefault();
   });
 
-  // Checkbox toggles
   list.addEventListener("change", (e) => {
     const inp = e.target;
     if (!inp || inp.tagName !== "INPUT") return;
+
     const v = String(inp.value);
     const set = getSet();
+
     if (inp.checked) set.add(v);
     else set.delete(v);
+
     render();
     onChange();
   });
 
-  // Search
   search.addEventListener("input", () => render());
 
-  // Close on outside click
   document.addEventListener("click", (e) => {
     if (!mount.classList.contains("open")) return;
     if (mount.contains(e.target)) return;
     close();
   });
 
-  // Close on Esc
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && mount.classList.contains("open")) close();
   });
 
-  // initial render
   render();
 
   return { render, close, open };
@@ -251,14 +304,17 @@ function buildMultiSelect({ mountId, title, options, getSet, onChange }){
 // -------------------- KPIs with weekly breakdown --------------------
 function aggregateByWeek(list){
   const map = new Map();
+
   for (const r of list){
     const k = weekKey(r);
-    if (!map.has(k)) map.set(k, { net:0, cogs:0, units:0 });
+    if (!map.has(k)) map.set(k, { net: 0, cogs: 0, units: 0 });
+
     const a = map.get(k);
     a.net += (r.NetSales || 0);
     a.cogs += (r.COGS || 0);
     a.units += (r.Units || 0);
   }
+
   return map;
 }
 
@@ -286,18 +342,18 @@ function weeklyLinesHtml(weeklyMap, metric){
 }
 
 function renderKpis(list){
-  const net = list.reduce((a,r)=>a + (r.NetSales||0),0);
-  const cogs = list.reduce((a,r)=>a + (r.COGS||0),0);
+  const net = list.reduce((a, r) => a + (r.NetSales || 0), 0);
+  const cogs = list.reduce((a, r) => a + (r.COGS || 0), 0);
   const gp = net - cogs;
   const gm = net !== 0 ? gp / net : null;
 
   const weekly = aggregateByWeek(list);
 
   const kpis = [
-    { label:"Net Sales (£)", value: fmtGBP(net), hint:"Gross Sales – Discounts – Returns (Ex VAT)", metric:"net" },
-    { label:"COGS (£)", value: fmtGBP(cogs), hint:"Σ (Units Sold × Cost per Unit at time of sale (Ex VAT))", metric:"cogs" },
-    { label:"Gross Profit (£)", value: fmtGBP(gp), hint:"Net Sales – COGS", metric:"gp" },
-    { label:"Gross Margin (%)", value: gm === null ? "—" : fmtPct(gm), hint:"Gross Profit ÷ Net Sales", metric:"gm" },
+    { label: "Net Sales (£)", value: fmtGBP(net), hint: "Gross Sales – Discounts – Returns (Ex VAT)", metric: "net" },
+    { label: "COGS (£)", value: fmtGBP(cogs), hint: "Σ (Units Sold × Cost per Unit at time of sale (Ex VAT))", metric: "cogs" },
+    { label: "Gross Profit (£)", value: fmtGBP(gp), hint: "Net Sales – COGS", metric: "gp" },
+    { label: "Gross Margin (%)", value: gm === null ? "—" : fmtPct(gm), hint: "Gross Profit ÷ Net Sales", metric: "gm" },
   ];
 
   el("kpis").innerHTML = kpis.map(k => `
@@ -310,14 +366,55 @@ function renderKpis(list){
   `).join("");
 }
 
+// -------------------- Product thumbs --------------------
+function wireProductThumbs(scope = document){
+  scope.querySelectorAll("img[data-product-thumb]").forEach((img) => {
+    if (img.dataset.wired === "1") return;
+    img.dataset.wired = "1";
+
+    img.addEventListener("error", () => {
+      const currentStage = img.dataset.stage || "1";
+
+      if (currentStage === "1") {
+        img.dataset.stage = "2";
+        img.src = img.dataset.src2;
+        return;
+      }
+
+      img.dataset.stage = "fallback";
+      img.onerror = null;
+      img.src = img.dataset.fallback;
+    });
+  });
+}
+
+// -------------------- Table --------------------
 function renderTable(){
   const start = (page - 1) * pageSize;
   const slice = filtered.slice(start, start + pageSize);
 
   el("tbody").innerHTML = slice.map(r => `
     <tr>
-      <td>${r.Store}</td>
-      <td>${r.SKU}</td>
+      <td>${escapeHtml(r.Store)}</td>
+      <td>
+        <a class="sku-link" href="${r.CatalogUrl}" target="_blank" rel="noopener noreferrer">
+          ${escapeHtml(r.SKU)}
+        </a>
+      </td>
+      <td class="thumb-cell">
+        <a href="${r.CatalogUrl}" target="_blank" rel="noopener noreferrer" title="Open product in NewStore catalog">
+          <img
+            class="prod-thumb"
+            data-product-thumb="1"
+            data-stage="1"
+            data-src2="${r.ProductImageUrl2}"
+            data-fallback="${r.ProductImageFallback}"
+            src="${r.ProductImageUrl1}"
+            alt="${escapeHtml(r.SKU)}"
+            loading="lazy"
+          />
+        </a>
+      </td>
       <td>${r.ISOYear}</td>
       <td>${r.ISOWeek}</td>
       <td class="num">${fmtNum(r.Units)}</td>
@@ -325,10 +422,12 @@ function renderTable(){
       <td class="num">${fmtGBP(r.COGS)}</td>
       <td class="num">${fmtGBP(r.GrossProfit)}</td>
       <td class="num">${fmtPct(r.GrossMarginPct)}</td>
-      <td class="num">${Number(r.WeightedUnitCost||0).toFixed(2)}</td>
-      <td class="muted">${r._merge}</td>
+      <td class="num">${Number(r.WeightedUnitCost || 0).toFixed(2)}</td>
+      <td class="muted">${escapeHtml(r._merge)}</td>
     </tr>
   `).join("");
+
+  wireProductThumbs(el("tbody"));
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   el("pageInfo").textContent = `Rows: ${filtered.length} · Page ${page}/${totalPages}`;
@@ -346,8 +445,7 @@ function applyFilters(){
     return true;
   });
 
-  // orden tipo reporte: ISOYear/ISOWeek desc, Store, SKU
-  filtered.sort((a,b)=>{
+  filtered.sort((a, b) => {
     if (a.ISOYear !== b.ISOYear) return b.ISOYear - a.ISOYear;
     if (a.ISOWeek !== b.ISOWeek) return b.ISOWeek - a.ISOWeek;
     if (a.Store !== b.Store) return a.Store.localeCompare(b.Store);
@@ -367,7 +465,6 @@ function fillFilters(){
   const weeks = uniq(rows.map(weekKey));
   const weeksSorted = sortWeekKeys(weeks);
 
-  // store
   msStore = buildMultiSelect({
     mountId: "storeMs",
     title: "",
@@ -376,7 +473,6 @@ function fillFilters(){
     onChange: applyFilters,
   });
 
-  // week
   msWeek = buildMultiSelect({
     mountId: "weekMs",
     title: "",
@@ -388,11 +484,13 @@ function fillFilters(){
 
 async function load(){
   el("meta").textContent = "Loading…";
+
   const res = await fetch(GP_REPORT_URL, { cache: "no-store" });
   if (!res.ok){
     el("meta").textContent = `Error loading data (${res.status})`;
     throw new Error(`GET failed: ${res.status}`);
   }
+
   raw = await res.json();
   rows = normalizeData(raw);
   filtered = [...rows];
@@ -414,14 +512,13 @@ function wire(){
     state.stores.clear();
     state.weeks.clear();
     el("skuSearch").value = "";
-    // re-render multiselect summaries
+
     if (msStore) msStore.render();
     if (msWeek) msWeek.render();
+
     applyFilters();
   });
 
-
-  // Export dropdown
   const exportWrap = document.querySelector(".export");
   const exportBtn = el("exportBtn");
   const exportMenu = el("exportMenu");
@@ -429,29 +526,41 @@ function wire(){
 
   if (exportBtn && exportWrap && exportMenu){
     const closeExport = () => exportWrap.classList.remove("open");
+
     exportBtn.addEventListener("click", (e) => {
       e.preventDefault();
       exportWrap.classList.toggle("open");
     });
-    exportCsvItem && exportCsvItem.addEventListener("click", (e) => {
-      e.preventDefault();
-      closeExport();
-      exportCsv();
-    });
+
+    if (exportCsvItem){
+      exportCsvItem.addEventListener("click", (e) => {
+        e.preventDefault();
+        closeExport();
+        exportCsv();
+      });
+    }
+
     document.addEventListener("click", (e) => {
       if (!exportWrap.classList.contains("open")) return;
       if (exportWrap.contains(e.target)) return;
       closeExport();
     });
+
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeExport();
     });
   }
 
+  el("prevBtn").addEventListener("click", () => {
+    page--;
+    renderTable();
+  });
 
+  el("nextBtn").addEventListener("click", () => {
+    page++;
+    renderTable();
+  });
 
-  el("prevBtn").addEventListener("click", () => { page--; renderTable(); });
-  el("nextBtn").addEventListener("click", () => { page++; renderTable(); });
   el("refreshBtn").addEventListener("click", load);
 }
 
