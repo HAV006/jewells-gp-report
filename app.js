@@ -504,7 +504,13 @@ function fillFilters(){
 async function load(){
   el("meta").textContent = "Loading…";
 
-  const res = await fetch(GP_REPORT_URL, { cache: "no-store" });
+  // const res = await fetch(GP_REPORT_URL, { cache: "no-store" });
+
+  const res = await fetch(GP_REPORT_URL, {
+    cache: "no-store",
+    credentials: "include"
+  });
+  
   if (!res.ok){
     el("meta").textContent = `Error loading data (${res.status})`;
     throw new Error(`GET failed: ${res.status}`);
