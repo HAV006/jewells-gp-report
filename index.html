@@ -196,7 +196,7 @@
             left: -6px;
       right: auto;
       width: max(260px, calc(100% + 12px));
-left: 0;
+      left: 0;
       right: 0;
       z-index: 20;
       background: rgba(255,255,255,0.98);
@@ -353,6 +353,42 @@ left: 0;
       background: rgba(250,242,227,0.55);
     }
 
+    .thumb-cell{
+      width: 48px;
+      min-width: 48px;
+      max-width: 48px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    .prod-thumb{
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    table{
+      table-layout: fixed;
+    }
+
+    td, th{
+      vertical-align: middle;
+    }
+
+    .sku-link{
+      color: var(--text);
+      text-decoration: underline;
+    }
+
+    .sku-link:hover{
+      opacity: 0.75;
+    }
+
   </style>
 </head>
 
@@ -410,6 +446,7 @@ left: 0;
             <tr>
               <th>Store</th>
               <th>SKU</th>
+              <th>Image</th>
               <th>ISOYear</th>
               <th>ISOWeek</th>
               <th class="num">Units</th>
