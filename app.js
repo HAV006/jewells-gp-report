@@ -135,8 +135,8 @@ function getExportRows(){
     GrossMarginPct: (r.GrossMarginPct === null || r.GrossMarginPct === undefined)
       ? ""
       : Number(r.GrossMarginPct),
-    WeightedUnitCost: Number(r.WeightedUnitCost || 0),
-    Merge: r._merge || "",
+    WeightedUnitCost: Number(r.WeightedUnitCost || 0) //,
+    // Merge: r._merge || "",
   }));
 }
 
