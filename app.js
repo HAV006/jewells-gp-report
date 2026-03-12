@@ -1,7 +1,6 @@
 // ✅ Pon aquí tu endpoint público del Worker
 const GP_REPORT_URL = "https://mute-moon-e712.hectora-b43.workers.dev/gp-report";
 
-const ITEM_IMAGE_BASE_URL = "https://jewells-com.s3.amazonaws.com/ITEM%20JPG";
 const DEFAULT_PRODUCT_IMAGE_URL = "https://jewells-com.s3.amazonaws.com/Logo/logo-red.png";
 const NEWSTORE_CATALOG_BASE_URL = "https://manager.jewells.p.newstore.net/catalog/catalog-gb/locales/en-gb/products";
 
@@ -58,11 +57,6 @@ function escapeHtml(v){
     .replaceAll("'", "&#39;");
 }
 
-function buildProductImageUrl(sku, index){
-  const safeSku = encodeURIComponent(String(sku || "").trim());
-  return `${ITEM_IMAGE_BASE_URL}/${safeSku}_${index}.png`;
-}
-
 function buildCatalogUrl(sku){
   const safeSku = encodeURIComponent(String(sku || "").trim());
   return `${NEWSTORE_CATALOG_BASE_URL}/${safeSku}?lastCount=10&lastOffset=0&lastQuery=${safeSku}`;
@@ -87,10 +81,10 @@ function normalizeData(payload){
       WeightedUnitCost: Number(r.WeightedUnitCost ?? r.weightedunitcost ?? 0),
       _merge: String(r._merge ?? ""),
 
-      ProductImageUrl1: buildProductImageUrl(sku, 1),
-      ProductImageUrl2: buildProductImageUrl(sku, 2),
-      ProductImageFallback: DEFAULT_PRODUCT_IMAGE_URL,
-      CatalogUrl: buildCatalogUrl(sku),
+      ProductImageFile: String(r.ProductImageFile ?? r.productimagefile ?? "logo-red.png"),
+      ProductImageUrl: String(r.ProductImageUrl ?? r.productimageurl ?? DEFAULT_PRODUCT_IMAGE_URL),
+      ProductImageMatchType: String(r.ProductImageMatchType ?? r.productimagematchtype ?? "fallback"),
+      CatalogUrl: String(r.CatalogUrl ?? r.catalogurl ?? buildCatalogUrl(sku)),
     };
   });
 }
@@ -135,8 +129,7 @@ function getExportRows(){
     GrossMarginPct: (r.GrossMarginPct === null || r.GrossMarginPct === undefined)
       ? ""
       : Number(r.GrossMarginPct),
-    WeightedUnitCost: Number(r.WeightedUnitCost || 0) //,
-    // Merge: r._merge || "",
+    WeightedUnitCost: Number(r.WeightedUnitCost || 0)
   }));
 }
 
@@ -203,7 +196,6 @@ function buildMultiSelect({ mountId, title, options, getSet, onChange }){
   `;
 
   const btn = mount.querySelector(".ms-btn");
-  const panel = mount.querySelector(".ms-panel");
   const list = mount.querySelector("[data-ms-list]");
   const valEl = mount.querySelector("[data-ms-value]");
   const search = mount.querySelector(".ms-search");
@@ -366,42 +358,6 @@ function renderKpis(list){
   `).join("");
 }
 
-// -------------------- Product thumbs --------------------
-function wireProductThumbs(scope = document){
-  scope.querySelectorAll("img[data-product-thumb]").forEach((img) => {
-    if (img.dataset.wired === "1") return;
-    img.dataset.wired = "1";
-
-    const link = img.closest("a");
-
-    if (link) {
-      link.href = img.currentSrc || img.src;
-    }
-
-    img.addEventListener("load", () => {
-      if (link) {
-        link.href = img.currentSrc || img.src;
-      }
-    });
-
-    img.addEventListener("error", () => {
-      const currentStage = img.dataset.stage || "1";
-
-      if (currentStage === "1") {
-        img.dataset.stage = "2";
-        img.src = img.dataset.src2;
-        if (link) link.href = img.dataset.src2;
-        return;
-      }
-
-      img.dataset.stage = "fallback";
-      img.onerror = null;
-      img.src = img.dataset.fallback;
-      if (link) link.href = img.dataset.fallback;
-    });
-  });
-}
-
 // -------------------- Table --------------------
 function renderTable(){
   const start = (page - 1) * pageSize;
@@ -411,25 +367,21 @@ function renderTable(){
     <tr>
       <td>${escapeHtml(r.Store)}</td>
       <td>
-        <a class="sku-link" href="${r.CatalogUrl}" target="_blank" rel="noopener noreferrer">
+        <a class="sku-link" href="${escapeHtml(r.CatalogUrl)}" target="_blank" rel="noopener noreferrer">
           ${escapeHtml(r.SKU)}
         </a>
       </td>
       <td class="thumb-cell">
         <a
           class="product-image-link"
-          href="${r.ProductImageUrl1}"
+          href="${escapeHtml(r.ProductImageUrl || DEFAULT_PRODUCT_IMAGE_URL)}"
           target="_blank"
           rel="noopener noreferrer"
           title="Open product image"
         >
           <img
             class="prod-thumb"
-            data-product-thumb="1"
-            data-stage="1"
-            data-src2="${r.ProductImageUrl2}"
-            data-fallback="${r.ProductImageFallback}"
-            src="${r.ProductImageUrl1}"
+            src="${escapeHtml(r.ProductImageUrl || DEFAULT_PRODUCT_IMAGE_URL)}"
             alt="${escapeHtml(r.SKU)}"
             loading="lazy"
           />
@@ -445,8 +397,6 @@ function renderTable(){
       <td class="num">${Number(r.WeightedUnitCost || 0).toFixed(2)}</td>
     </tr>
   `).join("");
-
-  wireProductThumbs(el("tbody"));
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   el("pageInfo").textContent = `Rows: ${filtered.length} · Page ${page}/${totalPages}`;
