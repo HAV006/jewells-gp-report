@@ -74,7 +74,6 @@ function normalizeData(payload){
       ISOYear: Number(r.ISOYear ?? r.isoyear ?? 0),
       ISOWeek: Number(r.ISOWeek ?? r.isoweek ?? 0),
       Units: Number(r.Units_NewStore ?? r.units_newstore ?? r.Units ?? r.units ?? 0),
-      ExecutionStockQty: Number(r.ExecutionStockQty ?? r.executionstockqty ?? 0),
       NetSales: Number(r.NetSales ?? r.netsales ?? 0),
       COGS: Number(r.COGS ?? r.cogs ?? 0),
       GrossProfit: Number(r.GrossProfit ?? r.grossprofit ?? 0),
@@ -124,7 +123,6 @@ function getExportRows(){
     ISOYear: r.ISOYear,
     ISOWeek: r.ISOWeek,
     Units: Number(r.Units || 0),
-    StockATP: Number(r.ExecutionStockQty || 0),
     NetSales: Number(r.NetSales || 0),
     COGS: Number(r.COGS || 0),
     GrossProfit: Number(r.GrossProfit || 0),
@@ -392,7 +390,6 @@ function renderTable(){
       <td>${r.ISOYear}</td>
       <td>${r.ISOWeek}</td>
       <td class="num">${fmtNum(r.Units)}</td>
-      <td class="num">${fmtNum(r.ExecutionStockQty)}</td>
       <td class="num">${fmtGBP(r.NetSales)}</td>
       <td class="num">${fmtGBP(r.COGS)}</td>
       <td class="num">${fmtGBP(r.GrossProfit)}</td>
