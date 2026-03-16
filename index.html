@@ -417,7 +417,7 @@
 
     #reportTable thead th:nth-child(3),
     #reportTable tbody td:nth-child(3){
-      width: 110px;   /* Image */
+      width: 110px;  /* Image */
     }
 
     #reportTable thead th:nth-child(4),
@@ -437,37 +437,41 @@
 
     #reportTable thead th:nth-child(7),
     #reportTable tbody td:nth-child(7){
-      width: 110px;  /* Net Sales */
+      width: 90px;   /* Stock ATP */
     }
 
     #reportTable thead th:nth-child(8),
     #reportTable tbody td:nth-child(8){
-      width: 100px;  /* COGS */
+      width: 110px;  /* Net Sales */
     }
 
     #reportTable thead th:nth-child(9),
     #reportTable tbody td:nth-child(9){
-      width: 120px;  /* Gross Profit */
+      width: 100px;  /* COGS */
     }
 
     #reportTable thead th:nth-child(10),
     #reportTable tbody td:nth-child(10){
-      width: 120px;  /* Gross Margin % */
+      width: 120px;  /* Gross Profit */
     }
 
     #reportTable thead th:nth-child(11),
     #reportTable tbody td:nth-child(11){
+      width: 120px;  /* Gross Margin % */
+    }
+
+    #reportTable thead th:nth-child(12),
+    #reportTable tbody td:nth-child(12){
       width: 110px;  /* Wtd Unit Cost */
     }
 
-    #reportTable thead th:nth-child(6),
-    #reportTable tbody td:nth-child(6){
-      text-align: center !important;
-    }
-
     #reportTable thead th:nth-child(5),
-    #reportTable tbody td:nth-child(5){
-      text-align: center !important;   /* ISOWeek */
+    #reportTable tbody td:nth-child(5),
+    #reportTable thead th:nth-child(6),
+    #reportTable tbody td:nth-child(6),
+    #reportTable thead th:nth-child(7),
+    #reportTable tbody td:nth-child(7){
+      text-align: center !important;
     }
 
     .thumb-head{
@@ -585,6 +589,7 @@
               <th>ISOYear</th>
               <th>ISOWeek</th>
               <th class="num">Units</th>
+              <th class="num">Stock ATP</th>
               <th class="num">Net Sales</th>
               <th class="num">COGS</th>
               <th class="num">Gross Profit</th>
