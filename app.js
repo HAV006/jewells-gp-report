@@ -124,7 +124,7 @@ function getExportRows(){
     ISOYear: r.ISOYear,
     ISOWeek: r.ISOWeek,
     Units: Number(r.Units || 0),
-    StockATP: Number(r.ExecutionStockQty || 0),
+    In_Stock: Number(r.ExecutionStockQty || 0),
     NetSales: Number(r.NetSales || 0),
     COGS: Number(r.COGS || 0),
     GrossProfit: Number(r.GrossProfit || 0),
