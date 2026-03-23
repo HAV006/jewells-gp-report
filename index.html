@@ -520,6 +520,177 @@
       opacity: 0.75;
     }
 
+    .sort-btn{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border:0;
+      background:transparent;
+      padding:0;
+      margin:0;
+      font:inherit;
+      color:inherit;
+      cursor:pointer;
+    }
+
+    .sort-btn:hover{
+      opacity:0.8;
+    }
+
+    .sort-icon{
+      font-size:11px;
+      color:var(--muted);
+      width:12px;
+      text-align:center;
+    }
+
+    .kpi-strip-wrap{
+      padding: 0 10px 10px;
+    }
+
+    .kpi-strip{
+      border: 1px solid var(--line);
+      background: var(--chip);
+      padding: 10px;
+    }
+
+    .kpi-strip-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .kpi-strip-label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:4px;
+    }
+
+    .kpi-strip-hint{
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .top-sellers-strip{
+      padding-top:12px;
+    }
+
+    .top-sellers-strip .kpi-strip-head{
+      justify-content:center;
+      margin-bottom:12px;
+    }
+
+    .top-sellers-strip .kpi-strip-head > div{
+      width:100%;
+      text-align:center;
+    }
+
+    .top-sellers-strip .kpi-strip-label{
+      font-size:16px;
+      font-weight:700;
+      letter-spacing:.2px;
+      color:var(--text);
+      margin-bottom:4px;
+    }
+
+    .top-sellers-strip .kpi-strip-hint{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .top-sellers-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap:10px;
+    }
+
+    .top-sellers-week{
+      border-top: 1px solid rgba(215,210,199,0.75);
+      padding-top:8px;
+      min-width:0;
+    }
+
+    .top-sellers-week-title{
+      font-size:11px;
+      color:var(--muted);
+      font-weight:600;
+      margin-bottom:6px;
+    }
+
+    .top-sellers-list{
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+    }
+
+    .top-seller-item{
+      display:grid;
+      grid-template-columns: 18px minmax(0,1fr) auto;
+      gap:6px;
+      align-items:center;
+      font-size:12px;
+    }
+
+    .top-seller-rank{
+      color:var(--muted);
+    }
+
+    .top-seller-link{
+      color:var(--text);
+      text-decoration:underline;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .top-seller-link:hover{
+      opacity:0.75;
+    }
+
+    .top-seller-units{
+      font-variant-numeric: tabular-nums;
+      font-weight:600;
+      text-align:right;
+    }
+
+    .top-sellers-empty,
+    .top-sellers-empty-block{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .top-sellers-empty-block{
+      padding-top:4px;
+    }
+
+    .top-sellers-empty{
+      padding:4px 0;
+    }
+
+    .top-sellers-week .top-sellers-empty{
+      border-top: 0;
+    }
+
+    .top-sellers-week .top-sellers-empty{
+      color:var(--muted);
+    }
+
+    .top-sellers-week:only-child{
+      min-width:180px;
+    }
+
+    .top-sellers-week-title + .top-sellers-empty{
+      margin-top:4px;
+    }
+
+    .top-sellers-list:empty::after{
+      content:"—";
+      color:var(--muted);
+      font-size:12px;
+    }
+
     .pager{
       display:flex;
       gap:8px;
@@ -552,6 +723,9 @@
     </header>
 
     <div class="row" id="kpis"></div>
+    <div class="kpi-strip-wrap">
+      <div id="topSellersKpi"></div>
+    </div>
 
     <div class="panel">
       <div class="filters">
@@ -588,7 +762,7 @@
               <th class="thumb-head">Image</th>
               <th>Reporting Year</th>
               <th>Reporting Week</th>
-              <th class="num">Units</th>
+              <th class="num"><button class="sort-btn" id="unitsSortBtn" type="button"><span>Units</span><span class="sort-icon" id="unitsSortIcon">↕</span></button></th>
               <th class="num">In Stock</th>
               <th class="num">Net Sales</th>
               <th class="num">COGS</th>

@@ -182,6 +182,7 @@ function exportCsv(){
 const state = {
   stores: new Set(),
   weeks: new Set(),
+  unitsSort: null,
 };
 
 let __openMs = null;
@@ -199,6 +200,172 @@ function sortWeekKeys(keys){
     if (ay !== by) return by - ay;
     return bw - aw;
   });
+}
+
+function normalizeWeeklyTopUnitsMap(source){
+  const out = {};
+  const input = source && typeof source === "object" ? source : {};
+
+  for (const [week, items] of Object.entries(input)) {
+    if (!Array.isArray(items)) {
+      out[String(week)] = [];
+      continue;
+    }
+
+    out[String(week)] = items.map((item) => {
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        return {
+          sku: String(item.sku ?? item.SKU ?? "").trim(),
+          units: Number(item.units ?? item.Units ?? 0),
+        };
+      }
+
+      return {
+        sku: String(item ?? "").trim(),
+        units: null,
+      };
+    }).filter((item) => item.sku);
+  }
+
+  return out;
+}
+
+function buildWeeklyTopUnitsFromRows(list, topN = 5){
+  const weekMap = new Map();
+
+  for (const r of (list || [])) {
+    const week = weekKey(r);
+    const sku = String(r.SKU || "").trim();
+    const units = Number(r.Units || 0);
+
+    if (!sku || units <= 0) continue;
+
+    if (!weekMap.has(week)) weekMap.set(week, new Map());
+    const skuMap = weekMap.get(week);
+    skuMap.set(sku, (skuMap.get(sku) || 0) + units);
+  }
+
+  const out = {};
+
+  for (const [week, skuMap] of weekMap.entries()) {
+    out[week] = [...skuMap.entries()]
+      .map(([sku, units]) => ({ sku, units }))
+      .sort((a, b) => {
+        if (b.units !== a.units) return b.units - a.units;
+        return a.sku.localeCompare(b.sku);
+      })
+      .slice(0, topN);
+  }
+
+  return out;
+}
+
+function hasActiveFilters(){
+  return state.stores.size > 0 || state.weeks.size > 0 || !!el("skuSearch")?.value.trim();
+}
+
+function unitsValueLabel(units){
+  if (units === null || units === undefined || Number.isNaN(Number(units))) return "";
+  return `${fmtNum(units)}u`;
+}
+
+function topSellerItemsHtml(items){
+  if (!Array.isArray(items) || items.length === 0) {
+    return `<div class="top-sellers-empty">—</div>`;
+  }
+
+  return items.map((item, idx) => {
+    const sku = String(item.sku || "").trim();
+    const units = unitsValueLabel(item.units);
+    const href = escapeHtml(buildCatalogUrl(sku));
+
+    return `
+      <div class="top-seller-item">
+        <span class="top-seller-rank">${idx + 1}.</span>
+        <a class="top-seller-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(sku)}</a>
+        <span class="top-seller-units">${escapeHtml(units)}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderTopSellers(list){
+  const mount = el("topSellersKpi");
+  if (!mount) return;
+
+  const source = (!hasActiveFilters() && raw && raw.weekly_top_units)
+    ? normalizeWeeklyTopUnitsMap(raw.weekly_top_units)
+    : buildWeeklyTopUnitsFromRows(list, 5);
+
+  const weeks = sortWeekKeys(Object.keys(source || {}));
+
+  if (weeks.length === 0) {
+    mount.innerHTML = `
+      <div class="kpi-strip top-sellers-strip">
+        <div class="kpi-strip-head">
+          <div>
+            <div class="kpi-strip-label">Top Sellers per Week</div>
+            <div class="kpi-strip-hint">Top 5 SKUs by units sold for each reporting week.</div>
+          </div>
+        </div>
+        <div class="top-sellers-empty-block">—</div>
+      </div>
+    `;
+    return;
+  }
+
+  const cols = weeks.map((week) => `
+    <div class="top-sellers-week">
+      <div class="top-sellers-week-title">${escapeHtml(week)}</div>
+      <div class="top-sellers-list">${topSellerItemsHtml(source[week])}</div>
+    </div>
+  `).join("");
+
+  mount.innerHTML = `
+    <div class="kpi-strip top-sellers-strip">
+      <div class="kpi-strip-head">
+        <div>
+          <div class="kpi-strip-label">Top Sellers per Week</div>
+          <div class="kpi-strip-hint">Top 5 SKUs by units sold for each reporting week.</div>
+        </div>
+      </div>
+      <div class="top-sellers-grid">${cols}</div>
+    </div>
+  `;
+}
+
+function compareDefaultRows(a, b){
+  const aYear = displayYear(a);
+  const bYear = displayYear(b);
+  if (aYear !== bYear) return bYear - aYear;
+
+  const aWeek = displayWeek(a);
+  const bWeek = displayWeek(b);
+  if (aWeek !== bWeek) return bWeek - aWeek;
+
+  if (a.Store !== b.Store) return a.Store.localeCompare(b.Store);
+  return a.SKU.localeCompare(b.SKU);
+}
+
+function compareUnitsRows(a, b, direction = "desc") {
+  const diff = Number(a.Units || 0) - Number(b.Units || 0);
+  if (diff !== 0) return direction === "asc" ? diff : -diff;
+  return compareDefaultRows(a, b);
+}
+
+function updateUnitsSortUi(){
+  const btn = el("unitsSortBtn");
+  const icon = el("unitsSortIcon");
+  if (!btn || !icon) return;
+
+  const mode = state.unitsSort;
+  const symbol = mode === "desc" ? "↓" : mode === "asc" ? "↑" : "↕";
+  const label = mode === "desc" ? "Units sorted descending" : mode === "asc" ? "Units sorted ascending" : "Sort by units";
+
+  icon.textContent = symbol;
+  btn.setAttribute("aria-label", label);
+  btn.setAttribute("title", `${label}. Click to toggle.`);
+  btn.dataset.sort = mode || "none";
 }
 
 function buildMultiSelect({ mountId, title, options, getSet, onChange }){
@@ -381,6 +548,8 @@ function renderKpis(list){
       ${weeklyLinesHtml(weekly, k.metric)}
     </div>
   `).join("");
+
+  renderTopSellers(list);
 }
 
 // -------------------- Table --------------------
@@ -440,18 +609,13 @@ function applyFilters(){
     return true;
   });
 
-  filtered.sort((a, b) => {
-    const aYear = displayYear(a);
-    const bYear = displayYear(b);
-    if (aYear !== bYear) return bYear - aYear;
+  if (state.unitsSort === "desc" || state.unitsSort === "asc") {
+    filtered.sort((a, b) => compareUnitsRows(a, b, state.unitsSort));
+  } else {
+    filtered.sort(compareDefaultRows);
+  }
 
-    const aWeek = displayWeek(a);
-    const bWeek = displayWeek(b);
-    if (aWeek !== bWeek) return bWeek - aWeek;
-
-    if (a.Store !== b.Store) return a.Store.localeCompare(b.Store);
-    return a.SKU.localeCompare(b.SKU);
-  });
+  updateUnitsSortUi();
 
   page = 1;
   renderKpis(filtered);
@@ -568,6 +732,15 @@ function wire(){
     renderTable();
   });
 
+  const unitsSortBtn = el("unitsSortBtn");
+  if (unitsSortBtn) {
+    unitsSortBtn.addEventListener("click", () => {
+      state.unitsSort = state.unitsSort === "desc" ? "asc" : "desc";
+      applyFilters();
+    });
+  }
+
+  updateUnitsSortUi();
   el("refreshBtn").addEventListener("click", load);
 }
 
