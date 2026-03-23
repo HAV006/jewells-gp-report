@@ -439,26 +439,13 @@ function renderSkuPerformance(list){
   const weeks = distinctWeekKeys(list);
   const stores = distinctStores(list);
 
-  const units = list.reduce((a, r) => a + (Number(r.Units) || 0), 0);
-  const net = list.reduce((a, r) => a + (Number(r.NetSales) || 0), 0);
-  const cogs = list.reduce((a, r) => a + (Number(r.COGS) || 0), 0);
-  const gp = net - cogs;
-  const gm = net !== 0 ? gp / net : null;
-
   const title = skus.length === 1
     ? `SKU Performance · ${skus[0]}`
     : `Filtered SKU Performance`;
 
-  const hint = `${fmtNum(skus.length)} SKU(s) · ${fmtNum(stores.length)} store(s) · ${fmtNum(weeks.length)} week(s) · search: ${skuFilter}`;
-
-  const metricHtml = `
-    <div class="summary-metrics-grid">
-      <div class="summary-metric-card"><div class="summary-metric-label">Units</div><div class="summary-metric-value">${fmtNum(units)}</div></div>
-      <div class="summary-metric-card"><div class="summary-metric-label">Net Sales</div><div class="summary-metric-value">${fmtGBP(net)}</div></div>
-      <div class="summary-metric-card"><div class="summary-metric-label">Gross Profit</div><div class="summary-metric-value">${fmtGBP(gp)}</div></div>
-      <div class="summary-metric-card"><div class="summary-metric-label">Gross Margin</div><div class="summary-metric-value">${gm === null ? "—" : fmtPct(gm)}</div></div>
-    </div>
-  `;
+  const hint = skus.length === 1
+    ? `${fmtNum(stores.length)} store(s) · ${fmtNum(weeks.length)} reporting week(s) selected`
+    : `${fmtNum(skus.length)} SKU(s) · ${fmtNum(stores.length)} store(s) · ${fmtNum(weeks.length)} reporting week(s) · search: ${skuFilter}`;
 
   const weeklyMap = aggregateByWeek(list);
   const weekCards = sortWeekKeys([...weeklyMap.keys()]).map((week) => {
@@ -477,7 +464,6 @@ function renderSkuPerformance(list){
   }).join("");
 
   const bodyHtml = `
-    ${metricHtml}
     <div class="week-summary-grid">${weekCards || `<div class="top-sellers-empty-block">—</div>`}</div>
   `;
 
@@ -485,7 +471,7 @@ function renderSkuPerformance(list){
     title,
     hint,
     bodyHtml,
-    modifier: "sku-performance-strip"
+    modifier: "sku-performance-strip sku-performance-strip-compact"
   });
 }
 
