@@ -42,9 +42,17 @@ function uniq(arr){
     .sort();
 }
 
+function displayYear(r){
+  return Number(r.ReportingYear ?? r.reportingyear ?? r.ISOYear ?? r.isoyear ?? 0);
+}
+
+function displayWeek(r){
+  return Number(r.WeekReporting ?? r.weekreporting ?? r.ISOWeek ?? r.isoweek ?? 0);
+}
+
 function weekKey(r){
-  const y = Number(r.ISOYear ?? r.isoyear ?? 0);
-  const w = Number(r.ISOWeek ?? r.isoweek ?? 0);
+  const y = displayYear(r);
+  const w = displayWeek(r);
   return `${y}-W${String(w).padStart(2, "0")}`;
 }
 
@@ -73,6 +81,19 @@ function normalizeData(payload){
       SKU: sku,
       ISOYear: Number(r.ISOYear ?? r.isoyear ?? 0),
       ISOWeek: Number(r.ISOWeek ?? r.isoweek ?? 0),
+      ReportingStartYear: Number(r.ReportingStartYear ?? r.reportingstartyear ?? 0),
+      ReportingYear: Number(r.ReportingYear ?? r.reportingyear ?? r.ISOYear ?? r.isoyear ?? 0),
+      WeekReporting: Number(r.WeekReporting ?? r.weekreporting ?? r.ISOWeek ?? r.isoweek ?? 0),
+      WeekReportingActual: Number(r.WeekReportingActual ?? r.weekreportingactual ?? 0),
+      WeekReporting1: Number(r.WeekReporting1 ?? r.weekreporting1 ?? 0),
+      WeekReporting2: Number(r.WeekReporting2 ?? r.weekreporting2 ?? 0),
+      WeekReporting3: Number(r.WeekReporting3 ?? r.weekreporting3 ?? 0),
+      WeekReporting4: Number(r.WeekReporting4 ?? r.weekreporting4 ?? 0),
+      ReportingYearActual: Number(r.ReportingYearActual ?? r.reportingyearactual ?? 0),
+      ReportingYear1: Number(r.ReportingYear1 ?? r.reportingyear1 ?? 0),
+      ReportingYear2: Number(r.ReportingYear2 ?? r.reportingyear2 ?? 0),
+      ReportingYear3: Number(r.ReportingYear3 ?? r.reportingyear3 ?? 0),
+      ReportingYear4: Number(r.ReportingYear4 ?? r.reportingyear4 ?? 0),
       Units: Number(r.Units_NewStore ?? r.units_newstore ?? r.Units ?? r.units ?? 0),
       ExecutionStockQty: Number(r.ExecutionStockQty ?? r.executionstockqty ?? 0),
       NetSales: Number(r.NetSales ?? r.netsales ?? 0),
@@ -121,6 +142,8 @@ function getExportRows(){
     Store: r.Store,
     SKU: r.SKU,
     CatalogUrl: r.CatalogUrl,
+    ReportingYear: displayYear(r),
+    WeekReporting: displayWeek(r),
     ISOYear: r.ISOYear,
     ISOWeek: r.ISOWeek,
     Units: Number(r.Units || 0),
@@ -389,8 +412,8 @@ function renderTable(){
           />
         </a>
       </td>
-      <td>${r.ISOYear}</td>
-      <td>${r.ISOWeek}</td>
+      <td>${displayYear(r)}</td>
+      <td>${displayWeek(r)}</td>
       <td class="num">${fmtNum(r.Units)}</td>
       <td class="num">${fmtNum(r.ExecutionStockQty)}</td>
       <td class="num">${fmtGBP(r.NetSales)}</td>
@@ -418,8 +441,14 @@ function applyFilters(){
   });
 
   filtered.sort((a, b) => {
-    if (a.ISOYear !== b.ISOYear) return b.ISOYear - a.ISOYear;
-    if (a.ISOWeek !== b.ISOWeek) return b.ISOWeek - a.ISOWeek;
+    const aYear = displayYear(a);
+    const bYear = displayYear(b);
+    if (aYear !== bYear) return bYear - aYear;
+
+    const aWeek = displayWeek(a);
+    const bWeek = displayWeek(b);
+    if (aWeek !== bWeek) return bWeek - aWeek;
+
     if (a.Store !== b.Store) return a.Store.localeCompare(b.Store);
     return a.SKU.localeCompare(b.SKU);
   });
@@ -463,7 +492,7 @@ async function load(){
     cache: "no-store",
     credentials: "include"
   });*/
-  
+
   if (!res.ok){
     el("meta").textContent = `Error loading data (${res.status})`;
     throw new Error(`GET failed: ${res.status}`);
