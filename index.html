@@ -551,7 +551,7 @@
     .kpi-strip{
       border: 1px solid var(--line);
       background: var(--chip);
-      padding: 10px;
+      padding: 12px;
     }
 
     .kpi-strip-head{
@@ -559,7 +559,7 @@
       align-items:flex-start;
       justify-content:space-between;
       gap:10px;
-      margin-bottom:10px;
+      margin-bottom:12px;
     }
 
     .kpi-strip-label{
@@ -573,56 +573,69 @@
       color:var(--muted);
     }
 
-    .top-sellers-strip{
-      padding-top:12px;
-    }
-
-    .top-sellers-strip .kpi-strip-head{
+    .insight-strip-head{
       justify-content:center;
-      margin-bottom:12px;
+      text-align:center;
     }
 
-    .top-sellers-strip .kpi-strip-head > div{
+    .insight-strip-head > div{
       width:100%;
       text-align:center;
     }
 
-    .top-sellers-strip .kpi-strip-label{
-      font-size:16px;
-      font-weight:700;
+    .insight-title{
+      font-size:18px !important;
+      font-weight:700 !important;
       letter-spacing:.2px;
-      color:var(--text);
+      color:var(--text) !important;
       margin-bottom:4px;
     }
 
-    .top-sellers-strip .kpi-strip-hint{
-      font-size:12px;
-      color:var(--muted);
+    .insight-hint{
+      font-size:12px !important;
+      color:var(--muted) !important;
     }
 
     .top-sellers-grid{
       display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap:10px;
+      gap:12px;
     }
 
-    .top-sellers-week{
+    .top-sellers-grid-multi{
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .top-sellers-grid-few{
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .top-sellers-week,
+    .top-sellers-week-card{
       border-top: 1px solid rgba(215,210,199,0.75);
-      padding-top:8px;
+      padding-top:10px;
       min-width:0;
     }
 
-    .top-sellers-week-title{
-      font-size:11px;
+    .top-sellers-week-card{
+      border: 1px solid rgba(215,210,199,0.75);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.55);
+      padding: 12px;
+    }
+
+    .top-sellers-week-title,
+    .week-summary-title,
+    .top-seller-hero-side-title{
+      font-size:12px;
       color:var(--muted);
-      font-weight:600;
-      margin-bottom:6px;
+      font-weight:700;
+      margin-bottom:8px;
     }
 
     .top-sellers-list{
       display:flex;
       flex-direction:column;
-      gap:5px;
+      gap:6px;
     }
 
     .top-seller-item{
@@ -637,7 +650,8 @@
       color:var(--muted);
     }
 
-    .top-seller-link{
+    .top-seller-link,
+    .top-seller-hero-sku{
       color:var(--text);
       text-decoration:underline;
       overflow:hidden;
@@ -645,13 +659,15 @@
       white-space:nowrap;
     }
 
-    .top-seller-link:hover{
+    .top-seller-link:hover,
+    .top-seller-hero-sku:hover{
       opacity:0.75;
     }
 
-    .top-seller-units{
+    .top-seller-units,
+    .top-seller-hero-units{
       font-variant-numeric: tabular-nums;
-      font-weight:600;
+      font-weight:700;
       text-align:right;
     }
 
@@ -662,33 +678,132 @@
     }
 
     .top-sellers-empty-block{
-      padding-top:4px;
+      padding-top:6px;
+      text-align:center;
     }
 
     .top-sellers-empty{
       padding:4px 0;
     }
 
-    .top-sellers-week .top-sellers-empty{
-      border-top: 0;
+    .top-seller-hero-grid{
+      display:grid;
+      grid-template-columns: minmax(280px, 1.1fr) minmax(220px, 0.9fr);
+      gap:14px;
+      align-items:stretch;
     }
 
-    .top-sellers-week .top-sellers-empty{
+    .top-seller-hero-primary,
+    .top-seller-hero-side,
+    .summary-metric-card,
+    .week-summary-card{
+      border: 1px solid rgba(215,210,199,0.75);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.55);
+    }
+
+    .top-seller-hero-primary{
+      padding: 16px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      gap:10px;
+      min-height: 180px;
+    }
+
+    .top-seller-hero-badge{
+      display:inline-flex;
+      align-self:flex-start;
+      padding:4px 8px;
+      border-radius:999px;
+      background: rgba(243,235,219,0.95);
       color:var(--muted);
+      font-size:11px;
+      font-weight:700;
     }
 
-    .top-sellers-week:only-child{
-      min-width:180px;
+    .top-seller-hero-sku{
+      font-size:30px;
+      font-weight:700;
+      text-decoration:none;
+      white-space:normal;
+      line-height:1.1;
     }
 
-    .top-sellers-week-title + .top-sellers-empty{
-      margin-top:4px;
+    .top-seller-hero-units{
+      font-size:28px;
+      text-align:left;
     }
 
-    .top-sellers-list:empty::after{
-      content:"—";
+    .top-seller-hero-side{
+      padding:12px;
+    }
+
+    .top-seller-hero-list .top-seller-item{
+      padding:4px 0;
+    }
+
+    .summary-metrics-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap:10px;
+      margin-bottom:12px;
+    }
+
+    .summary-metric-card{
+      padding:12px;
+    }
+
+    .summary-metric-label{
+      font-size:11px;
       color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .summary-metric-value{
+      font-size:22px;
+      font-weight:700;
+      line-height:1.2;
+      word-break:break-word;
+    }
+
+    .week-summary-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap:10px;
+    }
+
+    .week-summary-card{
+      padding:12px;
+    }
+
+    .week-summary-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
       font-size:12px;
+      padding:4px 0;
+      border-top: 1px solid rgba(215,210,199,0.45);
+    }
+
+    .week-summary-row:first-of-type{
+      border-top:none;
+      padding-top:0;
+    }
+
+    @media (max-width: 900px){
+      .top-seller-hero-grid{
+        grid-template-columns: 1fr;
+      }
+
+      .top-seller-hero-sku{
+        font-size:24px;
+      }
+
+      .top-seller-hero-units{
+        font-size:24px;
+      }
     }
 
     .pager{

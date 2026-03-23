@@ -260,8 +260,28 @@ function buildWeeklyTopUnitsFromRows(list, topN = 5){
   return out;
 }
 
+function getSkuFilterText(){
+  return el("skuSearch")?.value.trim() || "";
+}
+
+function hasSkuFilter(){
+  return !!getSkuFilterText();
+}
+
 function hasActiveFilters(){
-  return state.stores.size > 0 || state.weeks.size > 0 || !!el("skuSearch")?.value.trim();
+  return state.stores.size > 0 || state.weeks.size > 0 || hasSkuFilter();
+}
+
+function distinctWeekKeys(list){
+  return sortWeekKeys(uniq((list || []).map(weekKey)));
+}
+
+function distinctStores(list){
+  return uniq((list || []).map((r) => String(r.Store || "").trim()));
+}
+
+function distinctSkus(list){
+  return uniq((list || []).map((r) => String(r.SKU || "").trim()));
 }
 
 function unitsValueLabel(units){
@@ -289,28 +309,112 @@ function topSellerItemsHtml(items){
   }).join("");
 }
 
-function renderTopSellers(list){
+function topSellerWeekCardHtml(week, items){
+  return `
+    <div class="top-sellers-week-card">
+      <div class="top-sellers-week-title">${escapeHtml(week)}</div>
+      <div class="top-sellers-list">${topSellerItemsHtml(items)}</div>
+    </div>
+  `;
+}
+
+function renderInsightShell({ title, hint, bodyHtml, modifier = "" }){
   const mount = el("topSellersKpi");
   if (!mount) return;
 
+  mount.innerHTML = `
+    <div class="kpi-strip insight-strip ${modifier}">
+      <div class="kpi-strip-head insight-strip-head">
+        <div>
+          <div class="kpi-strip-label insight-title">${escapeHtml(title)}</div>
+          <div class="kpi-strip-hint insight-hint">${escapeHtml(hint)}</div>
+        </div>
+      </div>
+      ${bodyHtml}
+    </div>
+  `;
+}
+
+function buildTopSellersTitle(list){
+  const stores = distinctStores(list);
+  if (stores.length === 1) return `Top Sellers · ${stores[0]}`;
+  if (stores.length > 1 && state.stores.size > 0) return `Top Sellers · ${stores.length} Stores`;
+  return "Top Sellers per Week";
+}
+
+function buildTopSellersHint(list, weeks){
+  const stores = distinctStores(list);
+  if (weeks.length <= 1) {
+    if (stores.length === 1) return `Top 5 SKUs by units sold in ${weeks[0]} · ${stores[0]}.`;
+    return `Top 5 SKUs by units sold in ${weeks[0]}.`;
+  }
+
+  if (stores.length === 1) return `Top 5 SKUs by units sold in ${stores[0]} across selected reporting weeks.`;
+  return `Top 5 SKUs by units sold for each reporting week.`;
+}
+
+function renderTopSellersAdaptive(list){
   const source = (!hasActiveFilters() && raw && raw.weekly_top_units)
     ? normalizeWeeklyTopUnitsMap(raw.weekly_top_units)
     : buildWeeklyTopUnitsFromRows(list, 5);
 
   const weeks = sortWeekKeys(Object.keys(source || {}));
+  const title = buildTopSellersTitle(list);
+  const hint = buildTopSellersHint(list, weeks);
 
   if (weeks.length === 0) {
-    mount.innerHTML = `
-      <div class="kpi-strip top-sellers-strip">
-        <div class="kpi-strip-head">
-          <div>
-            <div class="kpi-strip-label">Top Sellers per Week</div>
-            <div class="kpi-strip-hint">Top 5 SKUs by units sold for each reporting week.</div>
+    renderInsightShell({
+      title,
+      hint,
+      bodyHtml: `<div class="top-sellers-empty-block">—</div>`,
+      modifier: "top-sellers-strip"
+    });
+    return;
+  }
+
+  if (weeks.length === 1) {
+    const week = weeks[0];
+    const items = Array.isArray(source[week]) ? source[week] : [];
+    const hero = items[0] || null;
+    const rest = items.slice(1, 5);
+
+    const heroHtml = hero ? `
+      <div class="top-seller-hero-primary">
+        <div class="top-seller-hero-badge">#1 · ${escapeHtml(week)}</div>
+        <a class="top-seller-hero-sku" href="${escapeHtml(buildCatalogUrl(hero.sku))}" target="_blank" rel="noopener noreferrer">${escapeHtml(hero.sku)}</a>
+        <div class="top-seller-hero-units">${escapeHtml(unitsValueLabel(hero.units))}</div>
+      </div>
+    ` : `<div class="top-sellers-empty-block">—</div>`;
+
+    const restHtml = rest.length
+      ? `<div class="top-seller-hero-list">${topSellerItemsHtml(rest)}</div>`
+      : `<div class="top-sellers-empty-block">No more sellers in this view.</div>`;
+
+    renderInsightShell({
+      title,
+      hint,
+      bodyHtml: `
+        <div class="top-seller-hero-grid">
+          ${heroHtml}
+          <div class="top-seller-hero-side">
+            <div class="top-seller-hero-side-title">Top 2–5 · ${escapeHtml(week)}</div>
+            ${restHtml}
           </div>
         </div>
-        <div class="top-sellers-empty-block">—</div>
-      </div>
-    `;
+      `,
+      modifier: "top-sellers-strip top-sellers-strip-single"
+    });
+    return;
+  }
+
+  if (weeks.length <= 3) {
+    const cards = weeks.map((week) => topSellerWeekCardHtml(week, source[week])).join("");
+    renderInsightShell({
+      title,
+      hint,
+      bodyHtml: `<div class="top-sellers-grid top-sellers-grid-few">${cards}</div>`,
+      modifier: "top-sellers-strip top-sellers-strip-few"
+    });
     return;
   }
 
@@ -321,17 +425,76 @@ function renderTopSellers(list){
     </div>
   `).join("");
 
-  mount.innerHTML = `
-    <div class="kpi-strip top-sellers-strip">
-      <div class="kpi-strip-head">
-        <div>
-          <div class="kpi-strip-label">Top Sellers per Week</div>
-          <div class="kpi-strip-hint">Top 5 SKUs by units sold for each reporting week.</div>
-        </div>
-      </div>
-      <div class="top-sellers-grid">${cols}</div>
+  renderInsightShell({
+    title,
+    hint,
+    bodyHtml: `<div class="top-sellers-grid top-sellers-grid-multi">${cols}</div>`,
+    modifier: "top-sellers-strip top-sellers-strip-multi"
+  });
+}
+
+function renderSkuPerformance(list){
+  const skuFilter = getSkuFilterText();
+  const skus = distinctSkus(list);
+  const weeks = distinctWeekKeys(list);
+  const stores = distinctStores(list);
+
+  const units = list.reduce((a, r) => a + (Number(r.Units) || 0), 0);
+  const net = list.reduce((a, r) => a + (Number(r.NetSales) || 0), 0);
+  const cogs = list.reduce((a, r) => a + (Number(r.COGS) || 0), 0);
+  const gp = net - cogs;
+  const gm = net !== 0 ? gp / net : null;
+
+  const title = skus.length === 1
+    ? `SKU Performance · ${skus[0]}`
+    : `Filtered SKU Performance`;
+
+  const hint = `${fmtNum(skus.length)} SKU(s) · ${fmtNum(stores.length)} store(s) · ${fmtNum(weeks.length)} week(s) · search: ${skuFilter}`;
+
+  const metricHtml = `
+    <div class="summary-metrics-grid">
+      <div class="summary-metric-card"><div class="summary-metric-label">Units</div><div class="summary-metric-value">${fmtNum(units)}</div></div>
+      <div class="summary-metric-card"><div class="summary-metric-label">Net Sales</div><div class="summary-metric-value">${fmtGBP(net)}</div></div>
+      <div class="summary-metric-card"><div class="summary-metric-label">Gross Profit</div><div class="summary-metric-value">${fmtGBP(gp)}</div></div>
+      <div class="summary-metric-card"><div class="summary-metric-label">Gross Margin</div><div class="summary-metric-value">${gm === null ? "—" : fmtPct(gm)}</div></div>
     </div>
   `;
+
+  const weeklyMap = aggregateByWeek(list);
+  const weekCards = sortWeekKeys([...weeklyMap.keys()]).map((week) => {
+    const a = weeklyMap.get(week);
+    const weekGp = a.net - a.cogs;
+    const weekGm = a.net !== 0 ? weekGp / a.net : null;
+    return `
+      <div class="week-summary-card">
+        <div class="week-summary-title">${escapeHtml(week)}</div>
+        <div class="week-summary-row"><span>Units</span><strong>${fmtNum(a.units)}</strong></div>
+        <div class="week-summary-row"><span>Net Sales</span><strong>${fmtGBP(a.net)}</strong></div>
+        <div class="week-summary-row"><span>Gross Profit</span><strong>${fmtGBP(weekGp)}</strong></div>
+        <div class="week-summary-row"><span>Margin</span><strong>${weekGm === null ? "—" : fmtPct(weekGm)}</strong></div>
+      </div>
+    `;
+  }).join("");
+
+  const bodyHtml = `
+    ${metricHtml}
+    <div class="week-summary-grid">${weekCards || `<div class="top-sellers-empty-block">—</div>`}</div>
+  `;
+
+  renderInsightShell({
+    title,
+    hint,
+    bodyHtml,
+    modifier: "sku-performance-strip"
+  });
+}
+
+function renderInsightPanel(list){
+  if (hasSkuFilter()) {
+    renderSkuPerformance(list);
+    return;
+  }
+  renderTopSellersAdaptive(list);
 }
 
 function compareDefaultRows(a, b){
@@ -549,7 +712,7 @@ function renderKpis(list){
     </div>
   `).join("");
 
-  renderTopSellers(list);
+  renderInsightPanel(list);
 }
 
 // -------------------- Table --------------------
