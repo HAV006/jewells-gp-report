@@ -408,9 +408,12 @@ function renderTopGrossProfitAdaptive(list){
     const heroHtml = hero ? `
       <div class="top-seller-hero-primary">
         <div class="top-seller-hero-badge">#1 · ${escapeHtml(week)}</div>
-        <div class="top-seller-hero-line">
-          <a class="top-seller-hero-sku" href="${escapeHtml(buildCatalogUrl(hero.sku))}" target="_blank" rel="noopener noreferrer">${escapeHtml(hero.sku)}</a>
-          <span class="top-seller-hero-inline-meta">${escapeHtml(unitsValueLabel(hero.units))}</span>
+        <div class="top-seller-hero-row">
+          <div class="top-seller-hero-line">
+            <a class="top-seller-hero-sku" href="${escapeHtml(buildCatalogUrl(hero.sku))}" target="_blank" rel="noopener noreferrer">${escapeHtml(hero.sku)}</a>
+            <span class="top-seller-hero-inline-meta">${escapeHtml(unitsValueLabel(hero.units))}</span>
+          </div>
+          <div class="top-seller-hero-gp">${escapeHtml(grossProfitValueLabel(hero.grossProfit ?? hero.gross_profit))}</div>
         </div>
       </div>
     ` : `<div class="top-sellers-empty-block">—</div>`;

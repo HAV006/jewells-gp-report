@@ -741,11 +741,21 @@
       font-weight:700;
     }
 
+    .top-seller-hero-row{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+
     .top-seller-hero-line{
       display:flex;
       align-items:baseline;
       gap:10px;
       flex-wrap:wrap;
+      min-width:0;
+      flex:1 1 auto;
     }
 
     .top-seller-hero-sku{
@@ -761,6 +771,17 @@
       font-weight:600;
       color:var(--muted);
       white-space:nowrap;
+      flex:0 0 auto;
+    }
+
+    .top-seller-hero-gp{
+      font-size:28px;
+      font-weight:700;
+      line-height:1.1;
+      text-align:right;
+      white-space:nowrap;
+      font-variant-numeric: tabular-nums;
+      flex:0 0 auto;
     }
 
     .top-seller-hero-side{
@@ -825,12 +846,20 @@
         grid-template-columns: 1fr;
       }
 
+      .top-seller-hero-row{
+        align-items:flex-start;
+      }
+
       .top-seller-hero-sku{
         font-size:24px;
       }
 
       .top-seller-hero-inline-meta{
         font-size:20px;
+      }
+
+      .top-seller-hero-gp{
+        font-size:24px;
       }
     }
 
