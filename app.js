@@ -321,14 +321,14 @@ function topSellerItemsHtml(items){
     const grossProfit = grossProfitValueLabel(item.grossProfit ?? item.gross_profit);
     const units = unitsValueLabel(item.units);
     const href = escapeHtml(buildCatalogUrl(sku));
-    const secondary = units ? `<span class="top-seller-secondary">${escapeHtml(units)}</span>` : "";
+    const inlineMeta = units ? `<span class="top-seller-inline-meta">${escapeHtml(units)}</span>` : "";
 
     return `
       <div class="top-seller-item">
         <span class="top-seller-rank">${idx + 1}.</span>
-        <div class="top-seller-main">
+        <div class="top-seller-main top-seller-main-inline">
           <a class="top-seller-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(sku)}</a>
-          ${secondary}
+          ${inlineMeta}
         </div>
         <span class="top-seller-units">${escapeHtml(grossProfit)}</span>
       </div>
@@ -408,8 +408,10 @@ function renderTopGrossProfitAdaptive(list){
     const heroHtml = hero ? `
       <div class="top-seller-hero-primary">
         <div class="top-seller-hero-badge">#1 · ${escapeHtml(week)}</div>
-        <a class="top-seller-hero-sku" href="${escapeHtml(buildCatalogUrl(hero.sku))}" target="_blank" rel="noopener noreferrer">${escapeHtml(hero.sku)}</a>
-        <div class="top-seller-hero-units">${escapeHtml(unitsValueLabel(hero.units))}</div>
+        <div class="top-seller-hero-line">
+          <a class="top-seller-hero-sku" href="${escapeHtml(buildCatalogUrl(hero.sku))}" target="_blank" rel="noopener noreferrer">${escapeHtml(hero.sku)}</a>
+          <span class="top-seller-hero-inline-meta">${escapeHtml(unitsValueLabel(hero.units))}</span>
+        </div>
       </div>
     ` : `<div class="top-sellers-empty-block">—</div>`;
 

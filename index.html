@@ -652,15 +652,21 @@
 
 .top-seller-main{
       display:flex;
-      flex-direction:column;
       min-width:0;
-      gap:2px;
+      gap:6px;
+      align-items:baseline;
+      flex-wrap:nowrap;
     }
 
-    .top-seller-secondary{
+    .top-seller-main-inline{
+      overflow:hidden;
+    }
+
+    .top-seller-inline-meta{
       font-size:11px;
       color:var(--muted);
       white-space:nowrap;
+      flex:0 0 auto;
     }
 
     .top-seller-link,
@@ -735,6 +741,13 @@
       font-weight:700;
     }
 
+    .top-seller-hero-line{
+      display:flex;
+      align-items:baseline;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
     .top-seller-hero-sku{
       font-size:30px;
       font-weight:700;
@@ -743,9 +756,11 @@
       line-height:1.1;
     }
 
-    .top-seller-hero-units{
-      font-size:28px;
-      text-align:left;
+    .top-seller-hero-inline-meta{
+      font-size:22px;
+      font-weight:600;
+      color:var(--muted);
+      white-space:nowrap;
     }
 
     .top-seller-hero-side{
@@ -814,8 +829,8 @@
         font-size:24px;
       }
 
-      .top-seller-hero-units{
-        font-size:24px;
+      .top-seller-hero-inline-meta{
+        font-size:20px;
       }
     }
 
