@@ -202,7 +202,7 @@ function sortWeekKeys(keys){
   });
 }
 
-function normalizeWeeklyTopUnitsMap(source){
+function normalizeWeeklyTopGrossProfitMap(source){
   const out = {};
   const input = source && typeof source === "object" ? source : {};
 
@@ -216,13 +216,19 @@ function normalizeWeeklyTopUnitsMap(source){
       if (item && typeof item === "object" && !Array.isArray(item)) {
         return {
           sku: String(item.sku ?? item.SKU ?? "").trim(),
+          grossProfit: Number(item.gross_profit ?? item.grossProfit ?? item.GrossProfit ?? 0),
           units: Number(item.units ?? item.Units ?? 0),
+          netSales: Number(item.net_sales ?? item.netSales ?? item.NetSales ?? 0),
+          cogs: Number(item.cogs ?? item.COGS ?? 0),
         };
       }
 
       return {
         sku: String(item ?? "").trim(),
+        grossProfit: null,
         units: null,
+        netSales: null,
+        cogs: null,
       };
     }).filter((item) => item.sku);
   }
@@ -230,28 +236,39 @@ function normalizeWeeklyTopUnitsMap(source){
   return out;
 }
 
-function buildWeeklyTopUnitsFromRows(list, topN = 5){
+function buildWeeklyTopGrossProfitFromRows(list, topN = 5){
   const weekMap = new Map();
 
   for (const r of (list || [])) {
     const week = weekKey(r);
     const sku = String(r.SKU || "").trim();
+    const grossProfit = Number(r.GrossProfit || 0);
     const units = Number(r.Units || 0);
+    const netSales = Number(r.NetSales || 0);
+    const cogs = Number(r.COGS || 0);
 
-    if (!sku || units <= 0) continue;
+    if (!sku) continue;
 
     if (!weekMap.has(week)) weekMap.set(week, new Map());
     const skuMap = weekMap.get(week);
-    skuMap.set(sku, (skuMap.get(sku) || 0) + units);
+
+    if (!skuMap.has(sku)) {
+      skuMap.set(sku, { sku, grossProfit: 0, units: 0, netSales: 0, cogs: 0 });
+    }
+
+    const item = skuMap.get(sku);
+    item.grossProfit += grossProfit;
+    item.units += units;
+    item.netSales += netSales;
+    item.cogs += cogs;
   }
 
   const out = {};
 
   for (const [week, skuMap] of weekMap.entries()) {
-    out[week] = [...skuMap.entries()]
-      .map(([sku, units]) => ({ sku, units }))
+    out[week] = [...skuMap.values()]
       .sort((a, b) => {
-        if (b.units !== a.units) return b.units - a.units;
+        if (b.grossProfit !== a.grossProfit) return b.grossProfit - a.grossProfit;
         return a.sku.localeCompare(b.sku);
       })
       .slice(0, topN);
@@ -289,6 +306,11 @@ function unitsValueLabel(units){
   return `${fmtNum(units)}u`;
 }
 
+function grossProfitValueLabel(grossProfit){
+  if (grossProfit === null || grossProfit === undefined || Number.isNaN(Number(grossProfit))) return "";
+  return fmtGBP(grossProfit);
+}
+
 function topSellerItemsHtml(items){
   if (!Array.isArray(items) || items.length === 0) {
     return `<div class="top-sellers-empty">—</div>`;
@@ -296,14 +318,19 @@ function topSellerItemsHtml(items){
 
   return items.map((item, idx) => {
     const sku = String(item.sku || "").trim();
+    const grossProfit = grossProfitValueLabel(item.grossProfit ?? item.gross_profit);
     const units = unitsValueLabel(item.units);
     const href = escapeHtml(buildCatalogUrl(sku));
+    const secondary = units ? `<span class="top-seller-secondary">${escapeHtml(units)}</span>` : "";
 
     return `
       <div class="top-seller-item">
         <span class="top-seller-rank">${idx + 1}.</span>
-        <a class="top-seller-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(sku)}</a>
-        <span class="top-seller-units">${escapeHtml(units)}</span>
+        <div class="top-seller-main">
+          <a class="top-seller-link" href="${href}" target="_blank" rel="noopener noreferrer">${escapeHtml(sku)}</a>
+          ${secondary}
+        </div>
+        <span class="top-seller-units">${escapeHtml(grossProfit)}</span>
       </div>
     `;
   }).join("");
@@ -335,39 +362,39 @@ function renderInsightShell({ title, hint, bodyHtml, modifier = "" }){
   `;
 }
 
-function buildTopSellersTitle(list){
+function buildTopGrossProfitTitle(list){
   const stores = distinctStores(list);
-  if (stores.length === 1) return `Top Sellers · ${stores[0]}`;
-  if (stores.length > 1 && state.stores.size > 0) return `Top Sellers · ${stores.length} Stores`;
-  return "Top Sellers per Week";
+  if (stores.length === 1) return `Top Gross Profit · ${stores[0]}`;
+  if (stores.length > 1 && state.stores.size > 0) return `Top Gross Profit · ${stores.length} Stores`;
+  return "Top Gross Profit per Week";
 }
 
-function buildTopSellersHint(list, weeks){
+function buildTopGrossProfitHint(list, weeks){
   const stores = distinctStores(list);
   if (weeks.length <= 1) {
-    if (stores.length === 1) return `Top 5 SKUs by units sold in ${weeks[0]} · ${stores[0]}.`;
-    return `Top 5 SKUs by units sold in ${weeks[0]}.`;
+    if (stores.length === 1) return `Top 5 SKUs by Gross Profit in ${weeks[0]} · ${stores[0]}.`;
+    return `Top 5 SKUs by Gross Profit in ${weeks[0]}.`;
   }
 
-  if (stores.length === 1) return `Top 5 SKUs by units sold in ${stores[0]} across selected reporting weeks.`;
-  return `Top 5 SKUs by units sold for each reporting week.`;
+  if (stores.length === 1) return `Top 5 SKUs by Gross Profit in ${stores[0]} across selected reporting weeks.`;
+  return `Top 5 SKUs by Gross Profit for each reporting week.`;
 }
 
-function renderTopSellersAdaptive(list){
-  const source = (!hasActiveFilters() && raw && raw.weekly_top_units)
-    ? normalizeWeeklyTopUnitsMap(raw.weekly_top_units)
-    : buildWeeklyTopUnitsFromRows(list, 5);
+function renderTopGrossProfitAdaptive(list){
+  const source = (!hasActiveFilters() && raw && raw.weekly_top_gross_profit)
+    ? normalizeWeeklyTopGrossProfitMap(raw.weekly_top_gross_profit)
+    : buildWeeklyTopGrossProfitFromRows(list, 5);
 
   const weeks = sortWeekKeys(Object.keys(source || {}));
-  const title = buildTopSellersTitle(list);
-  const hint = buildTopSellersHint(list, weeks);
+  const title = buildTopGrossProfitTitle(list);
+  const hint = buildTopGrossProfitHint(list, weeks);
 
   if (weeks.length === 0) {
     renderInsightShell({
       title,
       hint,
       bodyHtml: `<div class="top-sellers-empty-block">—</div>`,
-      modifier: "top-sellers-strip"
+      modifier: "top-sellers-strip top-gross-profit-strip"
     });
     return;
   }
@@ -388,7 +415,7 @@ function renderTopSellersAdaptive(list){
 
     const restHtml = rest.length
       ? `<div class="top-seller-hero-list">${topSellerItemsHtml(rest)}</div>`
-      : `<div class="top-sellers-empty-block">No more sellers in this view.</div>`;
+      : `<div class="top-sellers-empty-block">No more ranked SKUs in this view.</div>`;
 
     renderInsightShell({
       title,
@@ -397,12 +424,12 @@ function renderTopSellersAdaptive(list){
         <div class="top-seller-hero-grid">
           ${heroHtml}
           <div class="top-seller-hero-side">
-            <div class="top-seller-hero-side-title">Top 2–5 · ${escapeHtml(week)}</div>
+            <div class="top-seller-hero-side-title">Top 2–5 by Gross Profit · ${escapeHtml(week)}</div>
             ${restHtml}
           </div>
         </div>
       `,
-      modifier: "top-sellers-strip top-sellers-strip-single"
+      modifier: "top-sellers-strip top-sellers-strip-single top-gross-profit-strip"
     });
     return;
   }
@@ -413,7 +440,7 @@ function renderTopSellersAdaptive(list){
       title,
       hint,
       bodyHtml: `<div class="top-sellers-grid top-sellers-grid-few">${cards}</div>`,
-      modifier: "top-sellers-strip top-sellers-strip-few"
+      modifier: "top-sellers-strip top-sellers-strip-few top-gross-profit-strip"
     });
     return;
   }
@@ -429,7 +456,7 @@ function renderTopSellersAdaptive(list){
     title,
     hint,
     bodyHtml: `<div class="top-sellers-grid top-sellers-grid-multi">${cols}</div>`,
-    modifier: "top-sellers-strip top-sellers-strip-multi"
+    modifier: "top-sellers-strip top-sellers-strip-multi top-gross-profit-strip"
   });
 }
 
@@ -480,7 +507,7 @@ function renderInsightPanel(list){
     renderSkuPerformance(list);
     return;
   }
-  renderTopSellersAdaptive(list);
+  renderTopGrossProfitAdaptive(list);
 }
 
 function compareDefaultRows(a, b){
