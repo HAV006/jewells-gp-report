@@ -828,6 +828,22 @@ function fillFilters(){
   });
 }
 
+function formatGeneratedAtUtc(value){
+  if (!value) return "—";
+
+  const s = String(value).trim();
+
+  // Si ya viene con zona explícita, normalizamos
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(s)) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? s : d.toISOString();
+  }
+
+  // Si el backend dice que es UTC pero viene "naive",
+  // evitamos que el navegador lo trate como hora local
+  return s.replace(" ", "T") + "Z";
+}
+
 async function load(){
   el("meta").textContent = "Loading…";
 
@@ -847,7 +863,8 @@ async function load(){
   rows = normalizeData(raw);
   filtered = [...rows];
 
-  const ts = raw.generated_at_utc ? new Date(raw.generated_at_utc).toISOString() : "—";
+  // const ts = raw.generated_at_utc ? new Date(raw.generated_at_utc).toISOString() : "—";
+  const ts = formatGeneratedAtUtc(raw.generated_at_utc);
   el("meta").textContent = `Updated (UTC): ${ts} · Rows: ${rows.length}`;
 
   fillFilters();
